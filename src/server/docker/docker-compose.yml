@@ -1,0 +1,24 @@
+services:
+  store:
+    image: quollix/store:local
+    container_name: quollix_store_store
+    environment:
+      PROFILE: ${PROFILE:-}
+    ports:
+      - 80:8080
+
+  postgres:
+    image: postgres:17.2
+    container_name: quollix_store_database
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=postgres
+    ports:
+      - 127.0.0.1:5432:5432
+    tmpfs:
+      - /var/lib/postgresql/data
+
+networks:
+  quollix_store:
+    name: quollix_store

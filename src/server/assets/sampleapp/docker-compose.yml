@@ -1,0 +1,6 @@
+services:
+  sampleapp:
+    image: sample/sampleapp:1.2.3
+    container_name: sample_sampleapp_sampleapp
+    labels:
+      quollix.port: 8080

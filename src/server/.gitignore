@@ -1,0 +1,4 @@
+**.env
+store
+wire_gen.go
+server

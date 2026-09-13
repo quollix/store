@@ -1,0 +1,65 @@
+packages:
+  qsc/local:
+    interfaces:
+      AppSelector:
+        config:
+          filename: app_selector_mock.go
+          structname: AppSelectorMock
+      ComposeContentUpdater:
+        config:
+          filename: compose_content_updater_mock.go
+          structname: ComposeContentUpdaterMock
+      DockerHubRegistry:
+        config:
+          filename: dockerhub_registry_mock.go
+          structname: DockerHubRegistryMock
+      FileSystemOperator:
+        config:
+          filename: file_system_operator_mock.go
+          structname: FileSystemOperatorMock
+      ImageTagCache:
+        config:
+          filename: image_tag_cache_mock.go
+          structname: ImageTagCacheMock
+      ImageReferenceParser:
+        config:
+          filename: image_reference_parser_mock.go
+          structname: ImageReferenceParserMock
+      OCIRegistry:
+        config:
+          filename: oci_registry_mock.go
+          structname: OCIRegistryMock
+      RegistryTagFetcher:
+        config:
+          filename: registry_tag_fetcher_mock.go
+          structname: RegistryTagFetcherMock
+      SingleAppUpdater:
+        config:
+          filename: single_app_updater_mock.go
+          structname: SingleAppUpdaterMock
+      TagSelector:
+        config:
+          filename: tag_selector_mock.go
+          structname: TagSelectorMock
+      UpdateFetcher:
+        config:
+          filename: update_fetcher_mock.go
+          structname: UpdateFetcherMock
+  qsc/remote:
+    interfaces:
+      SessionManager:
+        config:
+          filename: session_manager_mock.go
+          structname: SessionManagerMock
+      SigningKeyManager:
+        config:
+          filename: signing_key_manager_mock.go
+          structname: SigningKeyManagerMock
+  github.com/quollix/common/utils:
+    interfaces:
+      OsWrapper:
+        config:
+          filename: os_wrapper_mock.go
+          structname: OsWrapperMock
+          dir: remote
+          pkgname: remote

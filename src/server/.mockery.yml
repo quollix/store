@@ -1,0 +1,29 @@
+packages:
+  server/maintainers:
+    interfaces:
+      UserRepository:
+        config:
+          filename: repository_mock.go
+          structname: UserRepositoryMock
+      SecretGenerator:
+        config:
+          filename: secret_generator_mock.go
+          structname: SecretGeneratorMock
+      EmailService:
+        config:
+          filename: email_service_mock.go
+          structname: EmailServiceMock
+  server/versions:
+    interfaces:
+      VersionRepository:
+        config:
+          filename: repository_mock.go
+          structname: VersionRepositoryMock
+  github.com/quollix/common/utils:
+    interfaces:
+      AuthHelper:
+        config:
+          filename: auth_helper_mock.go
+          structname: AuthHelperMock
+          dir: ./tools
+          pkgname: tools

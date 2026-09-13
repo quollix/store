@@ -1,0 +1,8 @@
+# This file is licensed under the 0BSD License: https://opensource.org/license/0bsd
+
+services:
+    nginx:
+        container_name: sample_nginx_nginx
+        image: nginx:1.0.1
+        labels:
+            quollix.port: 8080
