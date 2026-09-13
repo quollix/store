@@ -5,7 +5,6 @@ import (
 	"github.com/quollix/common/deploy"
 	"github.com/quollix/common/store"
 	u "github.com/quollix/common/utils"
-	"github.com/quollix/common/validation"
 )
 
 func TestServerInitialAdminPassword() {
@@ -43,7 +42,6 @@ func verifyInitialAdminPassword() error {
 			SetCookieHeader: true,
 			RootUrl:         "http://127.0.0.1:8080",
 		},
-		Validator: validation.NewVersionValidator(false),
 	}
 	if err := client.Login(username, password); err != nil {
 		return err
