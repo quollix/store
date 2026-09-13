@@ -86,11 +86,13 @@ func NewEmailClient(config *tools.Config) u.EmailClient {
 	return &u.EmailClientImpl{}
 }
 
-func NewRegistrationCodeProvider(config *tools.Config) maintainers.SecretGenerator {
+func NewRegistrationCodeProvider(config *tools.Config, authHelper u.AuthHelper) maintainers.SecretGenerator {
 	if config.UseSampleDataForTesting {
 		return &maintainers.RegistrationCodeProviderMock{}
 	}
-	return &maintainers.RegistrationCodeProviderImpl{}
+	return &maintainers.RegistrationCodeProviderImpl{
+		AuthHelper: authHelper,
+	}
 }
 
 func NewVersionValidator() validation.VersionValidator {
