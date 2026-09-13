@@ -1,6 +1,12 @@
 name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to publish, for example v1.2.3"
+        required: true
+        type: string
   push:
     tags:
       - "v*"
@@ -12,27 +18,34 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    defaults:
-      run:
-        working-directory: src/client
-
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref }}
 
       - uses: actions/setup-go@v6
         with:
           go-version-file: src/client/go.mod
 
+      - name: Generate artifacts
+        working-directory: src/ci-runner
+        run: |
+          go build
+          ./ci-runner common artifacts
+
       - name: Build
+        working-directory: src/client
         run: |
           mkdir -p dist
           CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o dist/qsc .
           CGO_ENABLED=0 GOOS=windows GOARCH=amd64 go build -o dist/qsc.exe .
 
       - name: Release
+        working-directory: src/client
         env:
           GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
         run: |
-          gh release create "${{ github.ref_name }}" dist/* \
+          gh release create "$RELEASE_TAG" dist/* \
             --generate-notes \
-            --title "${{ github.ref_name }}"
+            --title "$RELEASE_TAG"
