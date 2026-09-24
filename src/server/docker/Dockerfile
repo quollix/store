@@ -1,4 +1,4 @@
-FROM alpine:3.24.1
+FROM alpine:3.24.2
 
 RUN addgroup -g 10001 -S app \
  && adduser -S -D -H -h /nonexistent -s /sbin/nologin -G app -u 10001 app
