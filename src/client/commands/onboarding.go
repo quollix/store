@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"path/filepath"
 
 	u "github.com/quollix/common/utils"
 	"github.com/spf13/cobra"
@@ -45,6 +46,31 @@ var onboardingSetPrivateKeyCmd = &cobra.Command{
 			return err
 		}
 		fmt.Println("private key path saved successfully")
+		return nil
+	},
+}
+
+var onboardingSetAppsDirectoryCmd = &cobra.Command{
+	Use:   "set-apps-directory <path>",
+	Short: "configure the local apps directory",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		appsDirectory, err := filepath.Abs(args[0])
+		if err != nil {
+			return err
+		}
+		if _, err := Dependencies.OsWrapper.ReadDir(appsDirectory); err != nil {
+			return err
+		}
+		config, err := Dependencies.ConfigProvider.GetConfig()
+		if err != nil {
+			return err
+		}
+		config.AppsDirectory = appsDirectory
+		if err := Dependencies.ConfigProvider.SetConfig(config); err != nil {
+			return err
+		}
+		fmt.Println("apps directory saved successfully")
 		return nil
 	},
 }

@@ -21,22 +21,55 @@ func TestAdminCanCreateMaintainerAndMaintainerCanSetInitialPassword(t *testing.T
 	adminClient := GetAdminStoreClientAndLogin(t)
 	defer adminClient.WipeData()
 
-	err := createMaintainerByAdmin(t, adminClient, sampleMaintainer, sampleEmail, u.GetOtherLocalTestingPublicKeyRaw())
+	publicKey := u.GetOtherLocalTestingPublicKeyRaw()
+	err := createMaintainerByAdmin(t, adminClient, sampleMaintainer, sampleEmail, publicKey)
 	assert.Nil(t, err)
+
+	maintainerList, err := adminClient.ListMaintainersByAdmin()
+	assert.Nil(t, err)
+	assert.Equal(t, 2, len(maintainerList))
+	assert.Equal(t, maintainers.QuollixAdminUsername, maintainerList[0].Name)
+	assert.Equal(t, maintainers.QuollixAdminEmail, maintainerList[0].Email)
+	assert.True(t, maintainerList[0].IsActive)
+	assert.Equal(t, sampleMaintainer, maintainerList[1].Name)
+	assert.Equal(t, sampleEmail, maintainerList[1].Email)
+	assert.Equal(t, publicKey, maintainerList[1].PublicKeyRaw)
+	assert.False(t, maintainerList[1].IsActive)
 
 	userClient := GetStoreClient()
 	err = userClient.Login(sampleMaintainer, samplePassword)
 	u.AssertDeepStackErrorFromRequest(t, err, maintainers.IncorrectUsernameOrPasswordError)
 
 	assert.Nil(t, setupInitialPassword(userClient, maintainers.DefaultAccountRegistrationCode, samplePassword))
+	maintainerList, err = adminClient.ListMaintainersByAdmin()
+	assert.Nil(t, err)
+	assert.True(t, maintainerList[1].IsActive)
+
 	assert.Nil(t, userClient.Login(sampleMaintainer, samplePassword))
 	accountDetails, err := userClient.GetAccountDetails()
 	assert.Nil(t, err)
 	assert.Equal(t, sampleMaintainer, accountDetails.Name)
 	assert.Equal(t, sampleEmail, accountDetails.Email)
-	assert.Equal(t, u.GetOtherLocalTestingPublicKeyRaw(), accountDetails.PublicKeyRaw)
+	assert.Equal(t, publicKey, accountDetails.PublicKeyRaw)
 	assert.Equal(t, tools.UserStorageLimitInBytes, accountDetails.StorageLimitInBytes)
 	assert.False(t, accountDetails.IsAdmin)
+}
+
+func TestAdminCanSetMaintainerStorageLimitAndNegativeLimitIsRejected(t *testing.T) {
+	adminClient := GetAdminStoreClientAndLogin(t)
+	defer adminClient.WipeData()
+
+	storageLimit := 20 * tools.OneMegaByteInBytes
+	assert.Nil(t, adminClient.SetMaintainerStorageLimitByAdmin(maintainers.QuollixAdminUsername, storageLimit))
+	accountDetails, err := adminClient.GetAccountDetails()
+	assert.Nil(t, err)
+	assert.Equal(t, storageLimit, accountDetails.StorageLimitInBytes)
+
+	err = adminClient.SetMaintainerStorageLimitByAdmin(maintainers.QuollixAdminUsername, -1)
+	u.AssertDeepStackErrorFromRequest(t, err, maintainers.StorageLimitMustBeNonNegativeError)
+	accountDetails, err = adminClient.GetAccountDetails()
+	assert.Nil(t, err)
+	assert.Equal(t, storageLimit, accountDetails.StorageLimitInBytes)
 }
 
 func TestAdminMaintainerCreationRejectsExistingValues(t *testing.T) {
@@ -167,6 +200,8 @@ func TestAppMaintainerCanNotUseAdminMaintainerEndpoints(t *testing.T) {
 	userClient := GetStoreClient()
 	assert.Nil(t, userClient.Login(sampleMaintainer, samplePassword))
 	err := userClient.CreateMaintainerByAdmin("other", u.SampleEmailFailingRecipient, getOtherTestingPublicKey(), signMaintainerPublicKey(t, "other", getOtherTestingPublicKey()))
+	u.AssertDeepStackErrorFromRequest(t, err, serversetup.AccessDeniedForNonAdminUserError)
+	_, err = userClient.ListMaintainersByAdmin()
 	u.AssertDeepStackErrorFromRequest(t, err, serversetup.AccessDeniedForNonAdminUserError)
 }
 

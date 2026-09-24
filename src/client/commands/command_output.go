@@ -40,6 +40,18 @@ func renderIndexedVersionsTable(versions []store.LeanVersionDto) string {
 	return renderTable([]string{"index", "version", "timestamp", "size", "migration checkpoint", "downloads"}, rows)
 }
 
+func renderMaintainersTable(maintainers []store.AdminMaintainer) string {
+	rows := make([][]string, 0, len(maintainers))
+	for _, maintainer := range maintainers {
+		status := "pending"
+		if maintainer.IsActive {
+			status = "active"
+		}
+		rows = append(rows, []string{maintainer.Name, maintainer.Email, status, getPublicKeyFingerprint(maintainer.PublicKeyRaw)})
+	}
+	return renderTable([]string{"name", "email", "status", "public key fingerprint"}, rows)
+}
+
 func renderTable(headers []string, rows [][]string) string {
 	var buffer bytes.Buffer
 	writer := tabwriter.NewWriter(&buffer, 0, 0, 2, ' ', 0)

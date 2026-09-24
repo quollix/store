@@ -60,10 +60,14 @@ func (e *EmailHandler) SendMaintainerEmailHandler(w http.ResponseWriter, r *http
 	if !ok {
 		return
 	}
-	recipients, err := e.UserRepo.GetAllEmails()
+	maintainerList, err := e.UserRepo.ListMaintainers()
 	if err != nil {
 		u.WriteResponseError(w, nil, err)
 		return
+	}
+	recipients := make([]string, 0, len(maintainerList))
+	for _, maintainer := range maintainerList {
+		recipients = append(recipients, maintainer.Email)
 	}
 	result, err := e.EmailServiceImpl.SendEmails(recipients, emailRequest.Subject, emailRequest.Body)
 	if err != nil {

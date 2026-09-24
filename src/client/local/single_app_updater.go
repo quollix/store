@@ -1,6 +1,7 @@
 package local
 
 import (
+	"qsc/configuration"
 	"qsc/tools"
 
 	u "github.com/quollix/common/utils"
@@ -14,12 +15,12 @@ type SingleAppUpdaterImpl struct {
 	FileSystemOperator    FileSystemOperator
 	AppUpdater            UpdateFetcher
 	ComposeContentUpdater ComposeContentUpdater
+	ConfigProvider        configuration.Provider
 }
 
 func (d *SingleAppUpdaterImpl) ConductUpdateForSingleApp(app string) *tools.AppUpdateReport {
-	sourceComposePath := tools.GetAppComposePath(tools.AppsDir, app)
 	report := getEmptyAppUpdateReport(app)
-	updateReport, err := d.conductUpdateWithErrorHandling(sourceComposePath, report)
+	updateReport, err := d.conductUpdateWithErrorHandling(report)
 	if err != nil {
 		err = u.Logger.AddContext(err, "app_name", app)
 		u.Logger.Error(err, "result", "app update failed")
@@ -39,7 +40,16 @@ func getEmptyAppUpdateReport(app string) *tools.AppUpdateReport {
 	}
 }
 
-func (d *SingleAppUpdaterImpl) conductUpdateWithErrorHandling(sourceComposePath string, report *tools.AppUpdateReport) (*tools.AppUpdateReport, error) {
+func (d *SingleAppUpdaterImpl) conductUpdateWithErrorHandling(report *tools.AppUpdateReport) (*tools.AppUpdateReport, error) {
+	config, err := d.ConfigProvider.GetConfig()
+	if err != nil {
+		return report, err
+	}
+	appsDirectory, err := config.RequireAppsDirectory()
+	if err != nil {
+		return report, err
+	}
+	sourceComposePath := tools.GetAppComposePath(appsDirectory, report.AppName)
 	u.Logger.Info("reading compose file", tools.AppField, report.AppName, tools.ComposeFilePathField, sourceComposePath)
 	composeContent, err := d.FileSystemOperator.GetDockerComposeFileContent(sourceComposePath)
 	if err != nil {

@@ -60,7 +60,7 @@ var localDockerHubShowCmd = &cobra.Command{
 	Short: "print Docker Hub authentication for local app updates",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config, err := Dependencies.SessionManager.GetConfig()
+		config, err := Dependencies.ConfigProvider.GetConfig()
 		if err != nil {
 			return err
 		}

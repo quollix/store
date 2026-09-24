@@ -1,8 +1,6 @@
 package commands
 
 import (
-	"qsc/tools"
-
 	u "github.com/quollix/common/utils"
 	"github.com/spf13/cobra"
 )
@@ -14,19 +12,17 @@ func InitializeCobraCommands(deps *ClientDependencies) {
 	if signInCmd.Flags().Lookup("password") == nil {
 		signInCmd.Flags().StringP("password", "p", "", "password to use for sign-in; prompted securely when omitted")
 	}
-	uploadVersionCmd.Flags().StringVarP(&tools.AppsDir, "apps-directory", "d", tools.AppsDir, "Path to apps directory")
-	LocalCmd.PersistentFlags().StringVarP(&tools.AppsDir, "apps-directory", "d", tools.AppsDir, "Path to apps directory")
 	sessionCmd.AddCommand(sessionShowCmd, sessionDeleteCmd)
-	onboardingCmd.AddCommand(onboardingSetupPasswordCmd, onboardingSetPrivateKeyCmd)
+	onboardingCmd.AddCommand(onboardingSetupPasswordCmd, onboardingSetPrivateKeyCmd, onboardingSetAppsDirectoryCmd)
 	localDockerHubCmd.AddCommand(localDockerHubSetCmd, localDockerHubDeleteCmd, localDockerHubShowCmd)
-	LocalCmd.AddCommand(updateCmd, validateCmd, imageTagCacheCmd, listAppsCommand, localDockerHubCmd)
+	LocalCmd.AddCommand(updateCmd, validateCmd, imageTagCacheCmd, listAppsCommand, localDockerHubCmd, uploadVersionCmd)
 	Account.AddCommand(signInCmd, logoutCmd, deleteOwnAccountCmd, changePasswordCmd, accountDetailsCmd, changeEmailCmd)
-	adminMaintainerCmd.AddCommand(createMaintainerCmd, deleteMaintainerCmd)
+	adminMaintainersCmd.AddCommand(createMaintainerCmd, listMaintainersCmd, deleteMaintainerCmd, setMaintainerSpaceCmd)
 	adminEmailCmd.AddCommand(getEmailConfigCmd, setEmailConfigCmd, sendTestEmailToMyselfCmd, sendEmailToAllMaintainersCmd)
-	adminCmd.AddCommand(adminMaintainerCmd, adminEmailCmd)
+	adminCmd.AddCommand(adminMaintainersCmd, adminEmailCmd)
 	AppsCmd.AddCommand(createAppCmd, listRemoteAppsCmd, deleteRemoteAppCmd, searchRemoteAppsCmd)
 	versionCheckpointCmd.AddCommand(markVersionCheckpointCmd, unmarkVersionCheckpointCmd)
-	versionsCmd.AddCommand(uploadVersionCmd, deleteVersionCmd, listVersionsCmd, cloneVersionsCmd, contentVersionCmd, diffVersionsCmd, versionCheckpointCmd)
+	versionsCmd.AddCommand(deleteVersionCmd, listVersionsCmd, cloneVersionsCmd, contentVersionCmd, diffVersionsCmd, versionCheckpointCmd)
 	devCmd.AddCommand(devBootstrapCmd)
 	RootCmd.AddCommand(Account, adminCmd, AppsCmd, onboardingCmd, sessionCmd, versionsCmd, devCmd, LocalCmd)
 	RootCmd.CompletionOptions = cobra.CompletionOptions{DisableDefaultCmd: true}

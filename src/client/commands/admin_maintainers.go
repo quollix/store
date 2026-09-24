@@ -2,6 +2,8 @@ package commands
 
 import (
 	"fmt"
+	"math"
+	"strconv"
 
 	"qsc/remote"
 
@@ -9,8 +11,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var adminMaintainerCmd = &cobra.Command{
-	Use:   "maintainer",
+const bytesPerMegaByte = 1024 * 1024
+
+var adminMaintainersCmd = &cobra.Command{
+	Use:   "maintainers",
 	Short: "manage app maintainer accounts",
 	Run: func(cmd *cobra.Command, args []string) {
 		u.RunAndLogIfError(cmd.Help)
@@ -66,6 +70,37 @@ var deleteMaintainerCmd = &cobra.Command{
 			return err
 		}
 		fmt.Println("app maintainer deletion successful")
+		return nil
+	},
+}
+
+var listMaintainersCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list app maintainer accounts",
+	Args:  cobra.NoArgs,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		maintainers, err := Dependencies.AppStoreClient.ListMaintainersByAdmin()
+		if err != nil {
+			return err
+		}
+		fmt.Print(renderMaintainersTable(maintainers))
+		return nil
+	},
+}
+
+var setMaintainerSpaceCmd = &cobra.Command{
+	Use:   "set-space <name> <megabytes>",
+	Short: "set an app maintainer's storage limit",
+	Args:  cobra.ExactArgs(2),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		megaBytes, err := strconv.ParseUint(args[1], 10, 64)
+		if err != nil || megaBytes > math.MaxInt64/bytesPerMegaByte {
+			return u.Logger.NewError("storage limit must be a non-negative whole number of megabytes")
+		}
+		if err := Dependencies.AppStoreClient.SetMaintainerStorageLimitByAdmin(args[0], int64(megaBytes)*bytesPerMegaByte); err != nil {
+			return err
+		}
+		fmt.Println("app maintainer storage limit updated successfully")
 		return nil
 	},
 }

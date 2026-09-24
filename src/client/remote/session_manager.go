@@ -4,15 +4,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
-	"os"
-	"path/filepath"
-	"time"
 
+	"qsc/configuration"
 	"qsc/tools"
 
 	"github.com/quollix/common/store"
 	u "github.com/quollix/common/utils"
-	"gopkg.in/yaml.v3"
 )
 
 var (
@@ -21,10 +18,8 @@ var (
 )
 
 type SessionManager interface {
-	GetConfig() (*LocalConfig, error)
-	RequireSession() (*SessionData, error)
+	RequireSession() (*configuration.SessionData, error)
 	ResolveMaintainer(inputMaintainer string) (string, error)
-	SetConfig(config *LocalConfig) error
 	DeleteSession() error
 	GetDockerHubAuth() (*tools.DockerHubAuth, error)
 	SetDockerHubAuth(username, token string) error
@@ -37,68 +32,19 @@ type SessionManager interface {
 
 type SessionManagerImpl struct {
 	AppStoreClient *store.AppStoreClientImpl
-	Config         *tools.GlobalConfig
+	ConfigProvider configuration.Provider
 	OsWrapper      u.OsWrapper
 }
 
-type LocalConfig struct {
-	Session               *SessionData                    `yaml:"session,omitempty"`
-	Signing               *SigningConfig                  `yaml:"signing,omitempty"`
-	DockerHub             *tools.DockerHubAuth            `yaml:"docker_hub,omitempty"`
-	TrustedMaintainerKeys map[string]TrustedMaintainerKey `yaml:"trusted_maintainer_keys,omitempty"`
+func (c *SessionManagerImpl) SetConfig(config *configuration.Config) error {
+	return c.ConfigProvider.SetConfig(config)
 }
 
-type SigningConfig struct {
-	PublicKeyRawBase64 string `yaml:"public_key_raw_base64,omitempty"`
-	PrivateKeyPath     string `yaml:"private_key_path,omitempty"`
+func (c *SessionManagerImpl) GetConfig() (*configuration.Config, error) {
+	return c.ConfigProvider.GetConfig()
 }
 
-type TrustedMaintainerKey struct {
-	PublicKeyRawBase64       string `yaml:"public_key_raw_base64,omitempty"`
-	PublicKeySignatureBase64 string `yaml:"public_key_signature_base64,omitempty"`
-}
-
-type SessionData struct {
-	Maintainer     string    `yaml:"username"`
-	Cookie         string    `yaml:"cookie"`
-	ExpirationDate time.Time `yaml:"expiration_date"`
-}
-
-func (c *SessionManagerImpl) readLocalConfig() (*LocalConfig, error) {
-	raw, err := c.OsWrapper.ReadFile(c.Config.ConfigFilePath)
-	if err == nil {
-		var config LocalConfig
-		if err := yaml.Unmarshal(raw, &config); err != nil {
-			return nil, u.Logger.NewError(err.Error())
-		}
-		return &config, nil
-	}
-	if !os.IsNotExist(err) {
-		return nil, u.Logger.NewError(err.Error())
-	}
-	return &LocalConfig{}, nil
-}
-
-func (c *SessionManagerImpl) SetConfig(config *LocalConfig) error {
-	path := c.Config.ConfigFilePath
-	if err := c.OsWrapper.MkdirAll(filepath.Dir(path), 0o700); err != nil {
-		return u.Logger.NewError(err.Error())
-	}
-	data, err := yaml.Marshal(config)
-	if err != nil {
-		return u.Logger.NewError(err.Error())
-	}
-	if err := c.OsWrapper.WriteFile(path, data, 0o600); err != nil {
-		return u.Logger.NewError(err.Error())
-	}
-	return nil
-}
-
-func (c *SessionManagerImpl) GetConfig() (*LocalConfig, error) {
-	return c.readLocalConfig()
-}
-
-func (c *SessionManagerImpl) RequireSession() (*SessionData, error) {
+func (c *SessionManagerImpl) RequireSession() (*configuration.SessionData, error) {
 	config, err := c.GetConfig()
 	if err != nil {
 		return nil, err
@@ -241,9 +187,9 @@ func (c *SessionManagerImpl) SaveMaintainerPublicKeyRecord(record *store.Maintai
 		return err
 	}
 	if config.TrustedMaintainerKeys == nil {
-		config.TrustedMaintainerKeys = map[string]TrustedMaintainerKey{}
+		config.TrustedMaintainerKeys = map[string]configuration.TrustedMaintainerKey{}
 	}
-	config.TrustedMaintainerKeys[record.Maintainer] = TrustedMaintainerKey{
+	config.TrustedMaintainerKeys[record.Maintainer] = configuration.TrustedMaintainerKey{
 		PublicKeyRawBase64:       base64.StdEncoding.EncodeToString(record.PublicKeyRaw),
 		PublicKeySignatureBase64: base64.StdEncoding.EncodeToString(record.PublicKeySignature),
 	}

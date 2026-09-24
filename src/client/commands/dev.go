@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"qsc/remote"
+	"qsc/configuration"
 	"qsc/tools"
 
 	u "github.com/quollix/common/utils"
@@ -43,6 +43,10 @@ var devBootstrapCmd = &cobra.Command{
 		}
 
 		privateKeyPath := filepath.Join(configDir, "sample-store-private-key")
+		appsDirectory := filepath.Join(configDir, "apps")
+		if err := Dependencies.OsWrapper.MkdirAll(appsDirectory, 0o700); err != nil {
+			return err
+		}
 		if err := Dependencies.OsWrapper.WriteFile(privateKeyPath, []byte(u.LocalTestingPrivateKeyOpenSSH), 0o600); err != nil {
 			return err
 		}
@@ -54,8 +58,9 @@ var devBootstrapCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		config := &remote.LocalConfig{
-			Session: &remote.SessionData{
+		config := &configuration.Config{
+			AppsDirectory: appsDirectory,
+			Session: &configuration.SessionData{
 				Maintainer:     devBootstrapAdminUsername,
 				Cookie:         Dependencies.AppStoreClient.Parent.Cookie.Value,
 				ExpirationDate: Dependencies.AppStoreClient.Parent.Cookie.Expires,
@@ -65,13 +70,16 @@ var devBootstrapCmd = &cobra.Command{
 				Token:    tools.SampleDockerHubAuth.Token,
 			},
 		}
-		if err := Dependencies.SessionManager.SetConfig(config); err != nil {
+		if err := Dependencies.ConfigProvider.SetConfig(config); err != nil {
 			return err
 		}
 		if err := Dependencies.SigningKeyManager.StorePublicKeyRaw(details.PublicKeyRaw); err != nil {
 			return err
 		}
 		if err := Dependencies.SigningKeyManager.SetPrivateKeyPath(privateKeyPath, u.LocalTestingPrivateKeyPassphrase); err != nil {
+			return err
+		}
+		if _, err := downloadLatestVersions(devBootstrapAdminUsername, appsDirectory); err != nil {
 			return err
 		}
 

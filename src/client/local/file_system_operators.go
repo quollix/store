@@ -8,6 +8,7 @@ import (
 	"sort"
 	"strings"
 
+	"qsc/configuration"
 	"qsc/tools"
 
 	u "github.com/quollix/common/utils"
@@ -34,6 +35,7 @@ type FileSystemOperatorImpl struct {
 	OsWrapper            u.OsWrapper
 	TagSelector          TagSelector
 	ImageReferenceParser ImageReferenceParser
+	ConfigProvider       configuration.Provider
 }
 
 type updateConfig struct {
@@ -41,7 +43,15 @@ type updateConfig struct {
 }
 
 func (f *FileSystemOperatorImpl) GetForcedImages() (map[string]string, error) {
-	updateConfigPath := getUpdateConfigPath()
+	config, err := f.ConfigProvider.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	appsDirectory, err := config.RequireAppsDirectory()
+	if err != nil {
+		return nil, err
+	}
+	updateConfigPath := getUpdateConfigPath(appsDirectory)
 	data, err := f.OsWrapper.ReadFile(updateConfigPath)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -61,7 +71,7 @@ func (f *FileSystemOperatorImpl) GetForcedImages() (map[string]string, error) {
 		}
 		return nil, u.Logger.NewError(err.Error(), "path", updateConfigPath)
 	}
-	if err := f.validateUpdateConfig(cfg); err != nil {
+	if err := f.validateUpdateConfig(updateConfigPath, cfg); err != nil {
 		return nil, err
 	}
 	if cfg.ForceImage == nil {
@@ -70,12 +80,11 @@ func (f *FileSystemOperatorImpl) GetForcedImages() (map[string]string, error) {
 	return cfg.ForceImage, nil
 }
 
-func getUpdateConfigPath() string {
-	return filepath.Join(filepath.Dir(filepath.Clean(tools.AppsDir)), updateConfigFile)
+func getUpdateConfigPath(appsDirectory string) string {
+	return filepath.Join(filepath.Dir(filepath.Clean(appsDirectory)), updateConfigFile)
 }
 
-func (f *FileSystemOperatorImpl) validateUpdateConfig(cfg updateConfig) error {
-	updateConfigPath := getUpdateConfigPath()
+func (f *FileSystemOperatorImpl) validateUpdateConfig(updateConfigPath string, cfg updateConfig) error {
 	for image, tag := range cfg.ForceImage {
 		if strings.TrimSpace(image) == "" {
 			return u.Logger.NewError(invalidUpdateConfigEmptyImageName, "path", updateConfigPath)

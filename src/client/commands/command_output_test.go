@@ -2,7 +2,7 @@ package commands
 
 import (
 	"encoding/base64"
-	"qsc/remote"
+	"qsc/configuration"
 	"qsc/tools"
 	"testing"
 	"time"
@@ -14,14 +14,15 @@ import (
 
 var sampleSessionExpirationDate = time.Date(2026, 9, 10, 12, 30, 0, 0, time.UTC)
 
-func getSampleLocalConfig() *remote.LocalConfig {
-	return &remote.LocalConfig{
-		Session: &remote.SessionData{
+func getSampleLocalConfig() *configuration.Config {
+	return &configuration.Config{
+		AppsDirectory: "/home/alice/apps",
+		Session: &configuration.SessionData{
 			Maintainer:     "alice",
 			Cookie:         "session-cookie-secret",
 			ExpirationDate: sampleSessionExpirationDate,
 		},
-		Signing: &remote.SigningConfig{
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw()),
 			PrivateKeyPath:     "/home/alice/.ssh/id_ed25519",
 		},
@@ -29,7 +30,7 @@ func getSampleLocalConfig() *remote.LocalConfig {
 			Username: "alice-docker",
 			Token:    "docker-hub-token-secret",
 		},
-		TrustedMaintainerKeys: map[string]remote.TrustedMaintainerKey{
+		TrustedMaintainerKeys: map[string]configuration.TrustedMaintainerKey{
 			"quollix": {PublicKeyRawBase64: "public-key", PublicKeySignatureBase64: "signature"},
 		},
 	}
@@ -45,13 +46,15 @@ func getSampleGlobalConfig() *tools.GlobalConfig {
 func TestRenderSessionConfig_ReturnsNotConfiguredWithoutSession(t *testing.T) {
 	config := getSampleLocalConfig()
 	config.Session = nil
+	config.AppsDirectory = ""
 	config.Signing = nil
 	config.DockerHub = nil
 	config.TrustedMaintainerKeys = nil
 
 	output := renderSessionConfig(config, nil)
 
-	expectedOutput := `- session:
+	expectedOutput := `- apps_directory: not configured
+- session:
   - not configured
 - signing:
   - not configured
@@ -68,6 +71,7 @@ func TestRenderSessionConfig_IncludesLocalConfigMetadata(t *testing.T) {
 
 	expectedOutput := `- config_file: /home/alice/.config/qsc/config.yml
 - server_url: https://store.quollix.org
+- apps_directory: /home/alice/apps
 - session:
   - maintainer: alice
   - expiration_date: 2026-09-10 12:30:00
@@ -123,6 +127,19 @@ func TestRenderIndexedVersionsTable_UsesAlignedColumns(t *testing.T) {
 	expectedOutput := `index  version  timestamp            size     migration checkpoint  downloads
 0      1.27.4   2026-09-04 10:00:00  1.21 KB  true                  5
 1      1.27.3   2026-09-04 09:59:00  987 B    false                 4
+`
+	assert.Equal(t, expectedOutput, output)
+}
+
+func TestRenderMaintainersTable_ShowsStatusAndPublicKeyFingerprint(t *testing.T) {
+	output := renderMaintainersTable([]store.AdminMaintainer{
+		{Name: "alice", Email: "alice@example.com", PublicKeyRaw: u.GetLocalTestingPublicKeyRaw(), IsActive: true},
+		{Name: "bob", Email: "bob@example.com", PublicKeyRaw: u.GetOtherLocalTestingPublicKeyRaw(), IsActive: false},
+	})
+
+	expectedOutput := `name   email              status   public key fingerprint
+alice  alice@example.com  active   SHA256:QL91usdSz5KndtEmrv1z4p4KJTUpMA9Vqhqpzqduhbc
+bob    bob@example.com    pending  SHA256:RVqr2+zRJn6XkjcOfl80D6eO3fJygFwqG+jsX4LZPYA
 `
 	assert.Equal(t, expectedOutput, output)
 }

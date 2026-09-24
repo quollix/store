@@ -3,7 +3,7 @@ package commands
 import (
 	"crypto/ed25519"
 	"fmt"
-	"qsc/remote"
+	"qsc/configuration"
 	"time"
 
 	"github.com/quollix/common/store"
@@ -43,17 +43,17 @@ var signInCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		config, err := Dependencies.SessionManager.GetConfig()
+		config, err := Dependencies.ConfigProvider.GetConfig()
 		if err != nil {
 			return err
 		}
-		session := remote.SessionData{
+		session := configuration.SessionData{
 			Maintainer:     username,
 			Cookie:         Dependencies.AppStoreClient.Parent.Cookie.Value,
 			ExpirationDate: Dependencies.AppStoreClient.Parent.Cookie.Expires,
 		}
 		config.Session = &session
-		if err := Dependencies.SessionManager.SetConfig(config); err != nil {
+		if err := Dependencies.ConfigProvider.SetConfig(config); err != nil {
 			return err
 		}
 		if err := Dependencies.SigningKeyManager.StorePublicKeyRaw(details.PublicKeyRaw); err != nil {

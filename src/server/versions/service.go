@@ -17,7 +17,6 @@ import (
 
 var (
 	VersionAlreadyExist                  = "version already exists"
-	VersionContentAlreadyExists          = "version content already exists"
 	VersionUploadTimestampTooOld         = "version upload timestamp is too old"
 	VersionUploadTimestampInFuture       = "version upload timestamp is in the future"
 	VersionUploadTimestampNotNewer       = "version upload timestamp is not newer than the latest app version"
@@ -104,7 +103,7 @@ func (s *VersionService) UploadVersion(user *tools.User, versionUpload store.Ver
 		return nil, err
 	}
 	if doesContentHashExist {
-		return nil, u.Logger.NewError(VersionContentAlreadyExists)
+		return nil, u.Logger.NewError(store.VersionContentAlreadyExists)
 	}
 
 	payloadBytes, err := (&store.VersionSigningCodecImpl{}).EncodeVersion(&store.Version{

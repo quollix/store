@@ -32,9 +32,8 @@ type versionUploadRequest struct {
 }
 
 type versionUploadResult struct {
-	AppName        string
-	VersionName    string
-	CreatedVersion *store.CreatedVersionResponse
+	AppName string
+	Message string
 }
 
 func uploadVersionsFromAppsDirectory(config versionUploadConfig) ([]versionUploadResult, error) {
@@ -43,31 +42,57 @@ func uploadVersionsFromAppsDirectory(config versionUploadConfig) ([]versionUploa
 		return nil, err
 	}
 	if len(appNames) == 0 {
-		return nil, u.Logger.NewError("no apps found in apps directory", tools.AppsDirectoryField, tools.AppsDir)
+		return nil, u.Logger.NewError("no apps found")
 	}
 
-	requests := make([]versionUploadRequest, 0, len(appNames))
+	results := make([]versionUploadResult, 0, len(appNames))
+	didUploadFail := false
 	for _, appName := range appNames {
 		request, err := prepareVersionUploadRequest(config, appName)
 		if err != nil {
-			return nil, err
+			logVersionUploadError(appName, err)
+			results = append(results, versionUploadResult{AppName: appName, Message: "upload failed"})
+			didUploadFail = true
+			continue
 		}
-		requests = append(requests, *request)
-	}
-
-	results := make([]versionUploadResult, 0, len(requests))
-	for _, request := range requests {
-		result, err := uploadVersion(request)
+		err = uploadVersion(*request)
+		if isExistingVersionContentError(err) {
+			results = append(results, versionUploadResult{AppName: appName, Message: "store already has this content"})
+			continue
+		}
 		if err != nil {
-			return nil, err
+			logVersionUploadError(appName, err)
+			results = append(results, versionUploadResult{AppName: appName, Message: "upload failed"})
+			didUploadFail = true
+			continue
 		}
-		results = append(results, *result)
+		results = append(results, versionUploadResult{AppName: appName, Message: fmt.Sprintf("uploaded version %s", request.VersionName)})
+	}
+	if didUploadFail {
+		return results, u.Logger.NewError("one or more app uploads failed")
 	}
 	return results, nil
 }
 
+func logVersionUploadError(appName string, err error) {
+	u.Logger.Error(err, tools.AppField, appName, "result", "app upload failed")
+}
+
+func isExistingVersionContentError(err error) bool {
+	responseErrorMessage, ok := u.ExtractResponseErrorMessage(err)
+	return ok && responseErrorMessage == store.VersionContentAlreadyExists
+}
+
 func prepareVersionUploadRequest(config versionUploadConfig, appName string) (*versionUploadRequest, error) {
-	appPath := tools.GetAppComposePath(tools.AppsDir, appName)
+	localConfig, err := Dependencies.ConfigProvider.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	appsDirectory, err := localConfig.RequireAppsDirectory()
+	if err != nil {
+		return nil, err
+	}
+	appPath := tools.GetAppComposePath(appsDirectory, appName)
 	appContent, err := Dependencies.OsWrapper.ReadFile(appPath)
 	if err != nil {
 		return nil, err
@@ -117,31 +142,27 @@ func extractMainServiceVersionName(appContent []byte, appName string) (string, e
 	return "", u.Logger.NewError(tools.MainServiceNotFoundError, tools.AppField, appName)
 }
 
-func uploadVersion(request versionUploadRequest) (*versionUploadResult, error) {
+func uploadVersion(request versionUploadRequest) error {
 	appName := tools.GetAppNameFromComposePath(request.AppPath)
 	appContent, err := Dependencies.OsWrapper.ReadFile(request.AppPath)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	appContent = normalizeVersionUploadContent(appContent)
 	privateKeyOpenSSH, err := Dependencies.OsWrapper.ReadFile(request.PrivateKeyPath)
 	if err != nil {
-		return nil, u.Logger.NewError(err.Error())
+		return u.Logger.NewError(err.Error())
 	}
 	creationTimestamp := Dependencies.OsWrapper.Now().UTC()
 	signature, err := remote.SignVersionPayload(Dependencies.VersionSigningService, privateKeyOpenSSH, request.PrivateKeyPassphrase, request.Maintainer, appName, request.VersionName, creationTimestamp, appContent)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	createdVersion, err := Dependencies.AppStoreClient.UploadVersionAndReturnCreatedVersion(appName, request.VersionName, creationTimestamp, appContent, signature)
+	_, err = Dependencies.AppStoreClient.UploadVersionAndReturnCreatedVersion(appName, request.VersionName, creationTimestamp, appContent, signature)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return &versionUploadResult{
-		AppName:        appName,
-		VersionName:    request.VersionName,
-		CreatedVersion: createdVersion,
-	}, nil
+	return nil
 }
 
 func normalizeVersionUploadContent(content []byte) []byte {
@@ -166,7 +187,10 @@ func cloneLatestVersions(maintainer string, downloadPath string) (int, error) {
 	if err := Dependencies.OsWrapper.MkdirAll(downloadPath, 0o700); err != nil {
 		return 0, err
 	}
+	return downloadLatestVersions(maintainer, downloadPath)
+}
 
+func downloadLatestVersions(maintainer string, downloadPath string) (int, error) {
 	apps, err := Dependencies.AppStoreClient.ListOwnApps()
 	if err != nil {
 		return 0, err
@@ -304,10 +328,6 @@ func getAppStoreOfficialMaintainerPublicKeyOpenSSH() string {
 		return u.LocalTestingPublicKeyOpenSSH
 	}
 	return store.AppStoreOfficialMaintainerPublicKeyOpenSSH
-}
-
-func diffVersionContents(leftContent []byte, rightContent []byte) (string, error) {
-	return DiffText(string(leftContent), string(rightContent))
 }
 
 func orderVersionsNewestFirst(versions []store.LeanVersionDto) []store.LeanVersionDto {

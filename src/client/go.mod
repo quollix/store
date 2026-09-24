@@ -4,8 +4,7 @@ go 1.26.6
 
 require (
 	github.com/google/wire v0.7.0
-	github.com/quollix/common v1.3.18
-	github.com/quollix/deepstack v1.2.2
+	github.com/quollix/common v1.3.19
 	github.com/quollix/taskrunner v1.2.6
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
@@ -45,6 +44,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/quollix/deepstack v1.2.2 // indirect
 	github.com/rs/zerolog v1.34.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.3 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect

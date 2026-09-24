@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"qsc/local"
-	"qsc/tools"
 
 	u "github.com/quollix/common/utils"
 	"github.com/spf13/cobra"
@@ -36,7 +35,7 @@ var validateCmd = &cobra.Command{
 			return err
 		}
 		if !found {
-			fmt.Printf("no apps found in apps directory: %s\n", tools.AppsDir)
+			fmt.Println("no apps found")
 			return nil
 		}
 		fmt.Println("consistency check successful")
@@ -82,7 +81,7 @@ var listAppsCommand = &cobra.Command{
 			return err
 		}
 		if len(apps) == 0 {
-			fmt.Printf("no apps found in apps directory: %s\n", tools.AppsDir)
+			fmt.Println("no apps found")
 			return nil
 		}
 

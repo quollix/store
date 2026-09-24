@@ -3,19 +3,23 @@ package local
 import (
 	"testing"
 
-	"qsc/tools"
+	"qsc/configuration"
 
 	"github.com/quollix/common/assert"
 )
 
+const testAppsDirectory = "apps"
+
 func setupAppSelectorTest(t *testing.T) (*AppSelectorImpl, *FileSystemOperatorMock) {
 	fileSystemOperatorMock := NewFileSystemOperatorMock(t)
-	return &AppSelectorImpl{FileSystemOperator: fileSystemOperatorMock}, fileSystemOperatorMock
+	configProviderMock := configuration.NewProviderMock(t)
+	configProviderMock.EXPECT().GetConfig().Return(&configuration.Config{AppsDirectory: testAppsDirectory}, nil)
+	return &AppSelectorImpl{FileSystemOperator: fileSystemOperatorMock, ConfigProvider: configProviderMock}, fileSystemOperatorMock
 }
 
 func TestAppSelectorImpl_SelectApps_ReturnsAllAppsWhenNoSelectionWasPassed(t *testing.T) {
 	appSelector, fileSystemOperatorMock := setupAppSelectorTest(t)
-	fileSystemOperatorMock.EXPECT().GetAppNames(tools.AppsDir).Return([]string{"app1", "app2"}, nil)
+	fileSystemOperatorMock.EXPECT().GetAppNames(testAppsDirectory).Return([]string{"app1", "app2"}, nil)
 
 	selectedApps, err := appSelector.SelectApps(nil)
 
@@ -25,7 +29,7 @@ func TestAppSelectorImpl_SelectApps_ReturnsAllAppsWhenNoSelectionWasPassed(t *te
 
 func TestAppSelectorImpl_SelectApps_ReturnsOnlySelectedAppsInDirectoryOrder(t *testing.T) {
 	appSelector, fileSystemOperatorMock := setupAppSelectorTest(t)
-	fileSystemOperatorMock.EXPECT().GetAppNames(tools.AppsDir).Return([]string{"app1", "app2", "app3"}, nil)
+	fileSystemOperatorMock.EXPECT().GetAppNames(testAppsDirectory).Return([]string{"app1", "app2", "app3"}, nil)
 
 	selectedApps, err := appSelector.SelectApps([]string{"app3", "app1"})
 
@@ -35,7 +39,7 @@ func TestAppSelectorImpl_SelectApps_ReturnsOnlySelectedAppsInDirectoryOrder(t *t
 
 func TestAppSelectorImpl_SelectApps_ReturnsEmptySliceWhenNoAppsExist(t *testing.T) {
 	appSelector, fileSystemOperatorMock := setupAppSelectorTest(t)
-	fileSystemOperatorMock.EXPECT().GetAppNames(tools.AppsDir).Return([]string{}, nil)
+	fileSystemOperatorMock.EXPECT().GetAppNames(testAppsDirectory).Return([]string{}, nil)
 
 	selectedApps, err := appSelector.SelectApps(nil)
 

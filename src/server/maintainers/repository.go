@@ -43,7 +43,7 @@ type UserRepository interface {
 	GetUserByName(user string) (*tools.User, error)
 	GetUserBySetupTokenHash(setupTokenHash string) (*tools.User, error)
 	GetMaintainerPublicKeyRecord(name string) (*store.MaintainerPublicKeyRecord, error)
-	GetAllEmails() ([]string, error)
+	ListMaintainers() ([]store.AdminMaintainer, error)
 	DoesUserExist(user string) (bool, error)
 	DoesEmailExist(email string) (bool, error)
 	DoesPublicKeyRawExist(publicKeyRaw []byte) (bool, error)
@@ -126,25 +126,29 @@ func (r *UserRepositoryImpl) GetUserBySetupTokenHash(setupTokenHash string) (*to
 	return usr, nil
 }
 
-func (r *UserRepositoryImpl) GetAllEmails() ([]string, error) {
-	rows, err := r.DatabaseProvider.GetDb().Query("SELECT email FROM maintainers ORDER BY maintainer_id")
+func (r *UserRepositoryImpl) ListMaintainers() ([]store.AdminMaintainer, error) {
+	rows, err := r.DatabaseProvider.GetDb().Query(
+		`SELECT maintainer_name, email, ssh_public_key, setup_token_hash IS NULL
+		 FROM maintainers
+		 ORDER BY maintainer_name`,
+	)
 	if err != nil {
 		return nil, u.Logger.NewError(err.Error())
 	}
 	defer u.Close(rows)
 
-	var emails []string
+	var result []store.AdminMaintainer
 	for rows.Next() {
-		var email string
-		if err = rows.Scan(&email); err != nil {
+		var maintainer store.AdminMaintainer
+		if err = rows.Scan(&maintainer.Name, &maintainer.Email, &maintainer.PublicKeyRaw, &maintainer.IsActive); err != nil {
 			return nil, u.Logger.NewError(err.Error())
 		}
-		emails = append(emails, email)
+		result = append(result, maintainer)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, u.Logger.NewError(err.Error())
 	}
-	return emails, nil
+	return result, nil
 }
 
 func (r *UserRepositoryImpl) UpdateUser(user *tools.User) error {

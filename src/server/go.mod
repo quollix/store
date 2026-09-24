@@ -5,7 +5,7 @@ go 1.26.6
 require (
 	github.com/google/wire v0.7.0
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/quollix/common v1.3.18
+	github.com/quollix/common v1.3.19
 	github.com/quollix/deepstack v1.2.2
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.57.0

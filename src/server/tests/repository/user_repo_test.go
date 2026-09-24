@@ -11,6 +11,7 @@ import (
 	"server/tools"
 
 	"github.com/quollix/common/assert"
+	"github.com/quollix/common/store"
 	u "github.com/quollix/common/utils"
 )
 
@@ -54,24 +55,22 @@ func TestUserRepository_AdminGetsHigherStorageLimit(t *testing.T) {
 	assert.Equal(t, tools.AdminStorageLimitInBytes, adminUser.StorageLimitInBytes)
 }
 
-func TestUserRepository_GetAllEmailsIncludesAdminAndCreatedMaintainers(t *testing.T) {
+func TestUserRepository_ListMaintainersIncludesAdminAndPendingStatus(t *testing.T) {
 	InitDeps(t)
 	WipeDatabase(t)
 	defer WipeDatabase(t)
 
-	err := deps.UserRepo.CreateUser(maintainers.QuollixAdminUsername, "hashed-admin-password", maintainers.QuollixAdminEmail, []byte{2, 2, 2}, tools.AdminStorageLimitInBytes, true)
-	assert.Nil(t, err)
+	adminPublicKey := []byte{2, 2, 2}
+	assert.Nil(t, deps.UserRepo.CreateUser(maintainers.QuollixAdminUsername, "hashed-admin-password", maintainers.QuollixAdminEmail, adminPublicKey, tools.AdminStorageLimitInBytes, true))
+	maintainerPublicKey := u.GetOtherLocalTestingPublicKeyRaw()
+	assert.Nil(t, deps.UserRepo.CreateUserWithSetupToken("a-maintainer", "maintainer@example.com", maintainerPublicKey, make([]byte, ed25519.SignatureSize), tools.UserStorageLimitInBytes, "setup-token-hash", time.Now().UTC().Add(time.Hour)))
 
-	emails, err := deps.UserRepo.GetAllEmails()
+	maintainerList, err := deps.UserRepo.ListMaintainers()
 	assert.Nil(t, err)
-	assert.Equal(t, []string{maintainers.QuollixAdminEmail}, emails)
-
-	err = deps.UserRepo.CreateUser("normal-user", "hashed-password", "normal@example.com", []byte{3, 3, 3}, tools.UserStorageLimitInBytes, false)
-	assert.Nil(t, err)
-
-	emails, err = deps.UserRepo.GetAllEmails()
-	assert.Nil(t, err)
-	assert.Equal(t, []string{maintainers.QuollixAdminEmail, "normal@example.com"}, emails)
+	assert.Equal(t, []store.AdminMaintainer{
+		{Name: "a-maintainer", Email: "maintainer@example.com", PublicKeyRaw: maintainerPublicKey, IsActive: false},
+		{Name: maintainers.QuollixAdminUsername, Email: maintainers.QuollixAdminEmail, PublicKeyRaw: adminPublicKey, IsActive: true},
+	}, maintainerList)
 }
 
 func TestUserRepository_GetMaintainerPublicKeyRecord(t *testing.T) {

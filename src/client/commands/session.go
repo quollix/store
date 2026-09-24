@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"qsc/remote"
+	"qsc/configuration"
 	"qsc/tools"
 
 	u "github.com/quollix/common/utils"
@@ -38,7 +38,7 @@ var sessionShowCmd = &cobra.Command{
 	Short: "print the locally stored auth session",
 	Args:  cobra.NoArgs,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		config, err := Dependencies.SessionManager.GetConfig()
+		config, err := Dependencies.ConfigProvider.GetConfig()
 		if err != nil {
 			return err
 		}
@@ -47,11 +47,16 @@ var sessionShowCmd = &cobra.Command{
 	},
 }
 
-func renderSessionConfig(config *remote.LocalConfig, globalConfig *tools.GlobalConfig) string {
+func renderSessionConfig(config *configuration.Config, globalConfig *tools.GlobalConfig) string {
 	var builder strings.Builder
 	if globalConfig != nil {
 		fmt.Fprintf(&builder, "- config_file: %s\n", globalConfig.ConfigFilePath)
 		fmt.Fprintf(&builder, "- server_url: %s\n", globalConfig.AppStoreRootURL)
+	}
+	if config.AppsDirectory == "" {
+		builder.WriteString("- apps_directory: not configured\n")
+	} else {
+		fmt.Fprintf(&builder, "- apps_directory: %s\n", config.AppsDirectory)
 	}
 	builder.WriteString("- session:\n")
 	if config.Session == nil {
@@ -67,7 +72,7 @@ func renderSessionConfig(config *remote.LocalConfig, globalConfig *tools.GlobalC
 	return builder.String()
 }
 
-func renderSigningConfig(builder *strings.Builder, config *remote.LocalConfig) {
+func renderSigningConfig(builder *strings.Builder, config *configuration.Config) {
 	builder.WriteString("- signing:\n")
 	if config.Signing == nil {
 		builder.WriteString("  - not configured\n")
@@ -78,7 +83,7 @@ func renderSigningConfig(builder *strings.Builder, config *remote.LocalConfig) {
 	fmt.Fprintf(builder, "  - private_key_path: %s\n", config.Signing.PrivateKeyPath)
 }
 
-func renderDockerHubConfigSection(builder *strings.Builder, config *remote.LocalConfig) {
+func renderDockerHubConfigSection(builder *strings.Builder, config *configuration.Config) {
 	builder.WriteString("- docker_hub:\n")
 	if config.DockerHub == nil {
 		builder.WriteString("  - not configured\n")
@@ -99,7 +104,7 @@ func getPublicKeyFingerprintFromBase64(publicKeyRawBase64 string) string {
 	return getPublicKeyFingerprint(publicKeyRaw)
 }
 
-func trustedMaintainerKeyCount(config *remote.LocalConfig) int {
+func trustedMaintainerKeyCount(config *configuration.Config) int {
 	return len(config.TrustedMaintainerKeys)
 }
 

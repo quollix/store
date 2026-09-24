@@ -136,7 +136,7 @@ func (d *DockerHubRegistryImpl) getDockerHubAPIToken() (string, error) {
 	if config == nil {
 		return "", nil
 	}
-	apiToken, err := d.loginToDockerHub(config)
+	apiToken, err := d.loginToOfficialDockerHub(config)
 	if err != nil {
 		return "", err
 	}
@@ -144,7 +144,7 @@ func (d *DockerHubRegistryImpl) getDockerHubAPIToken() (string, error) {
 	return d.apiToken, nil
 }
 
-func (d *DockerHubRegistryImpl) loginToDockerHub(config *tools.DockerHubAuth) (string, error) {
+func (d *DockerHubRegistryImpl) loginToOfficialDockerHub(config *tools.DockerHubAuth) (string, error) {
 	request := map[string]string{
 		"username": config.Username,
 		"password": config.Token,

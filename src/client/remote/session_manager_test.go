@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"qsc/configuration"
 	"qsc/tools"
 
 	"github.com/quollix/common/assert"
@@ -23,23 +24,26 @@ func setupSessionManagerTest(t *testing.T) (*SessionManagerImpl, *OsWrapperMock)
 		AppStoreClient: &store.AppStoreClientImpl{
 			Parent: u.ComponentClient{},
 		},
-		Config: &tools.GlobalConfig{
-			ConfigFilePath: "/tmp/qsc/config.yml",
+		ConfigProvider: &configuration.ProviderImpl{
+			Config: &tools.GlobalConfig{
+				ConfigFilePath: "/tmp/qsc/config.yml",
+			},
+			OsWrapper: osWrapperMock,
 		},
 		OsWrapper: osWrapperMock,
 	}, osWrapperMock
 }
 
-func getSampleSession() SessionData {
-	return SessionData{
+func getSampleSession() configuration.SessionData {
+	return configuration.SessionData{
 		Maintainer:     "alice",
 		Cookie:         "cookie123",
 		ExpirationDate: time.Now().UTC().Add(1 * time.Hour),
 	}
 }
 
-func getSampleSigningConfig() SigningConfig {
-	return SigningConfig{
+func getSampleSigningConfig() configuration.SigningConfig {
+	return configuration.SigningConfig{
 		PublicKeyRawBase64: "public-key",
 		PrivateKeyPath:     "/tmp/private-key.pem",
 	}
@@ -51,14 +55,14 @@ func TestSessionManagerSetConfigStoresSession(t *testing.T) {
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).
 		RunAndReturn(func(_ string, data []byte, _ os.FileMode) error {
-			var actual LocalConfig
+			var actual configuration.Config
 			assert.Nil(t, yaml.Unmarshal(data, &actual))
 			assert.Equal(t, "alice", actual.Session.Maintainer)
 			assert.Equal(t, "cookie123", actual.Session.Cookie)
 			return nil
 		})
 
-	err := sessionManager.SetConfig(&LocalConfig{Session: &session})
+	err := sessionManager.SetConfig(&configuration.Config{Session: &session})
 	assert.Nil(t, err)
 }
 
@@ -183,7 +187,7 @@ trusted_maintainer_keys:
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).
 		RunAndReturn(func(_ string, data []byte, _ os.FileMode) error {
-			var actual LocalConfig
+			var actual configuration.Config
 			assert.Nil(t, yaml.Unmarshal(data, &actual))
 			assert.Nil(t, actual.Session)
 			assert.Equal(t, "public-key", actual.Signing.PublicKeyRawBase64)
@@ -220,7 +224,7 @@ signing:
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).
 		RunAndReturn(func(_ string, data []byte, _ os.FileMode) error {
-			var actual LocalConfig
+			var actual configuration.Config
 			assert.Nil(t, yaml.Unmarshal(data, &actual))
 			assert.Equal(t, "alice", actual.Session.Maintainer)
 			assert.Equal(t, "cookie456", actual.Session.Cookie)
@@ -252,13 +256,13 @@ func TestSessionManagerSetConfigWritesSigningOnly(t *testing.T) {
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).
 		RunAndReturn(func(_ string, data []byte, _ os.FileMode) error {
-			var actual LocalConfig
+			var actual configuration.Config
 			assert.Nil(t, yaml.Unmarshal(data, &actual))
 			assert.Equal(t, signingConfig.PublicKeyRawBase64, actual.Signing.PublicKeyRawBase64)
 			return nil
 		})
 
-	err := sessionManager.SetConfig(&LocalConfig{
+	err := sessionManager.SetConfig(&configuration.Config{
 		Signing: &signingConfig,
 	})
 	assert.Nil(t, err)
@@ -284,15 +288,15 @@ func TestSessionManagerSetConfigWritesSigningConfig(t *testing.T) {
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).
 		RunAndReturn(func(_ string, data []byte, _ os.FileMode) error {
-			var actual LocalConfig
+			var actual configuration.Config
 			assert.Nil(t, yaml.Unmarshal(data, &actual))
 			assert.Equal(t, "public-key", actual.Signing.PublicKeyRawBase64)
 			assert.Equal(t, "/tmp/private-key.pem", actual.Signing.PrivateKeyPath)
 			return nil
 		})
 
-	err := sessionManager.SetConfig(&LocalConfig{
-		Signing: &SigningConfig{
+	err := sessionManager.SetConfig(&configuration.Config{
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: "public-key",
 			PrivateKeyPath:     "/tmp/private-key.pem",
 		},
@@ -342,7 +346,7 @@ func TestSessionManagerSetConfigWritesEmptyConfig(t *testing.T) {
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", []byte("{}\n"), os.FileMode(0o600)).Return(nil)
 
-	err := sessionManager.SetConfig(&LocalConfig{})
+	err := sessionManager.SetConfig(&configuration.Config{})
 	assert.Nil(t, err)
 }
 
@@ -359,8 +363,8 @@ func TestSessionManagerSetConfigPassesWriteErrorUp(t *testing.T) {
 	osWrapperMock.EXPECT().MkdirAll("/tmp/qsc", os.FileMode(0o700)).Return(nil)
 	osWrapperMock.EXPECT().WriteFile("/tmp/qsc/config.yml", mock.Anything, os.FileMode(0o600)).Return(errors.New("boom"))
 
-	err := sessionManager.SetConfig(&LocalConfig{
-		Signing: &SigningConfig{
+	err := sessionManager.SetConfig(&configuration.Config{
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: "public-key",
 		},
 	})

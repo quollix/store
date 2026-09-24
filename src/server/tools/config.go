@@ -9,9 +9,10 @@ import (
 )
 
 const (
-	OneMegaByteInBytes       int64 = 1024 * 1024
-	UserStorageLimitInBytes  int64 = OneMegaByteInBytes
-	AdminStorageLimitInBytes int64 = 10 * 1024 * OneMegaByteInBytes
+	OneMegaByteInBytes        int64 = 1024 * 1024
+	VersionUploadLimitInBytes int64 = OneMegaByteInBytes
+	UserStorageLimitInBytes   int64 = 10 * OneMegaByteInBytes
+	AdminStorageLimitInBytes  int64 = 10 * 1024 * OneMegaByteInBytes
 
 	Port       = "8080"
 	CookieName = "auth"

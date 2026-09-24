@@ -7,21 +7,15 @@ import (
 	"qsc/tools"
 )
 
-const (
-	ansiRed   = "\033[31m"
-	ansiGreen = "\033[32m"
-	ansiReset = "\033[0m"
-)
-
 func ConvertUpdateReportToPrettyString(updateReport tools.FullUpdateReport) string {
 	var builder strings.Builder
 	for _, appUpdateReport := range updateReport.AppUpdateReports {
 		addUpdateReportLine(appUpdateReport, &builder)
 	}
 	if updateReport.WasSuccessful {
-		fmt.Fprintf(&builder, "summary: %soverall update successful%s\n", ansiGreen, ansiReset)
+		fmt.Fprintf(&builder, "summary: %soverall update successful%s\n", tools.AnsiGreen, tools.AnsiReset)
 	} else {
-		fmt.Fprintf(&builder, "summary: %soverall update failed%s\n", ansiRed, ansiReset)
+		fmt.Fprintf(&builder, "summary: %soverall update failed%s\n", tools.AnsiRed, tools.AnsiReset)
 	}
 	addFailingAppsLine(getFailingUpdateApps(updateReport), &builder)
 	return builder.String()
@@ -29,11 +23,11 @@ func ConvertUpdateReportToPrettyString(updateReport tools.FullUpdateReport) stri
 
 func addUpdateReportLine(report tools.AppUpdateReport, builder *strings.Builder) {
 	if report.IsSuccessfulSoFar() && !report.HasUpdates() {
-		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": OK, no updates found", ansiGreen))
+		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": OK, no updates found", tools.AnsiGreen))
 	} else if report.IsSuccessfulSoFar() {
-		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": OK, update successful", ansiGreen))
+		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": OK, update successful", tools.AnsiGreen))
 	} else {
-		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": FAIL, update did not succeed, error: "+report.ErrorMessage, ansiRed))
+		fmt.Fprintf(builder, "- %s\n", colorizeUpdateLine(report.AppName+": FAIL, update did not succeed, error: "+report.ErrorMessage, tools.AnsiRed))
 	}
 	for _, s := range report.ServiceUpdates {
 		fmt.Fprintf(builder, "  - %s: %s -> %s\n", s.ServiceName, s.OldTag, s.NewTag)
@@ -41,7 +35,7 @@ func addUpdateReportLine(report tools.AppUpdateReport, builder *strings.Builder)
 }
 
 func colorizeUpdateLine(text, color string) string {
-	return color + text + ansiReset
+	return color + text + tools.AnsiReset
 }
 
 func addFailingAppsLine(failingApps []string, builder *strings.Builder) {

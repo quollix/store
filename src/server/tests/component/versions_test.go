@@ -10,6 +10,7 @@ import (
 	"server/versions"
 
 	"github.com/quollix/common/assert"
+	"github.com/quollix/common/store"
 	u "github.com/quollix/common/utils"
 	"github.com/quollix/common/validation"
 )
@@ -83,7 +84,7 @@ func TestUploadedVersionContentAlreadyExists(t *testing.T) {
 	creationTimestamp, signature, err := NewSignedVersionUpload(sampleApp, "1.0.1", SampleVersionFileContent, time.Now().Add(-4*time.Minute).Round(time.Microsecond))
 	assert.Nil(t, err)
 	_, err = storeClient.UploadVersionAndReturnCreatedVersion(sampleApp, "1.0.1", creationTimestamp, SampleVersionFileContent, signature)
-	u.AssertDeepStackErrorFromRequest(t, err, versions.VersionContentAlreadyExists)
+	u.AssertDeepStackErrorFromRequest(t, err, store.VersionContentAlreadyExists)
 }
 
 func TestDuplicateVersionNamesAreAllowed(t *testing.T) {

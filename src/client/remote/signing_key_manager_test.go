@@ -6,24 +6,26 @@ import (
 	"os"
 	"testing"
 
+	"qsc/configuration"
+
 	"github.com/quollix/common/assert"
 	u "github.com/quollix/common/utils"
 )
 
-func setupSigningKeyManagerTest(t *testing.T) (*SigningKeyManagerImpl, *SessionManagerMock, *OsWrapperMock) {
-	sessionManagerMock := NewSessionManagerMock(t)
+func setupSigningKeyManagerTest(t *testing.T) (*SigningKeyManagerImpl, *configuration.ProviderMock, *OsWrapperMock) {
+	configProviderMock := configuration.NewProviderMock(t)
 	osWrapperMock := NewOsWrapperMock(t)
 	return &SigningKeyManagerImpl{
-		SessionManager: sessionManagerMock,
+		ConfigProvider: configProviderMock,
 		OsWrapper:      osWrapperMock,
-	}, sessionManagerMock, osWrapperMock
+	}, configProviderMock, osWrapperMock
 }
 
 func TestSigningKeyManagerStorePublicKey_InitializesSigningConfig(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{}, nil)
-	sessionManagerMock.EXPECT().SetConfig(&LocalConfig{
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{}, nil)
+	sessionManagerMock.EXPECT().SetConfig(&configuration.Config{
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString([]byte{1, 2, 3}),
 		},
 	}).Return(nil)
@@ -34,13 +36,13 @@ func TestSigningKeyManagerStorePublicKey_InitializesSigningConfig(t *testing.T) 
 
 func TestSigningKeyManagerStorePublicKey_PreservesPrivateKeyPath(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Signing: &configuration.SigningConfig{
 			PrivateKeyPath: "/tmp/private-key.pem",
 		},
 	}, nil)
-	sessionManagerMock.EXPECT().SetConfig(&LocalConfig{
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().SetConfig(&configuration.Config{
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString([]byte{4, 5, 6}),
 			PrivateKeyPath:     "/tmp/private-key.pem",
 		},
@@ -52,7 +54,7 @@ func TestSigningKeyManagerStorePublicKey_PreservesPrivateKeyPath(t *testing.T) {
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsWithoutSession(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{}, nil)
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{}, nil)
 
 	err := keyManager.SetPrivateKeyPath("/tmp/private-key.pem", u.LocalTestingPrivateKeyPassphrase)
 	assert.Equal(t, signingKeyNeedsSessionError, u.ExtractError(err))
@@ -60,8 +62,8 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsWithoutSession(t *testing.T) {
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsWithoutStoredPublicKey(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
 	}, nil)
 
 	err := keyManager.SetPrivateKeyPath("/tmp/private-key.pem", u.LocalTestingPrivateKeyPassphrase)
@@ -70,9 +72,9 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsWithoutStoredPublicKey(t *testi
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsWhenReadingPrivateKey(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
 	}, nil)
 	osWrapperMock.EXPECT().GetFileMode("/tmp/private-key.pem").Return(os.FileMode(0o600), nil)
 	osWrapperMock.EXPECT().ReadFile("/tmp/private-key.pem").Return(nil, errors.New("boom"))
@@ -83,9 +85,9 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsWhenReadingPrivateKey(t *testin
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsForOpenPermissions(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
 	}, nil)
 	osWrapperMock.EXPECT().GetFileMode("/tmp/private-key.pem").Return(os.FileMode(0o644), nil)
 
@@ -95,9 +97,9 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsForOpenPermissions(t *testing.T
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsForInvalidPrivateKey(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
 	}, nil)
 	osWrapperMock.EXPECT().GetFileMode("/tmp/private-key.pem").Return(os.FileMode(0o600), nil)
 	osWrapperMock.EXPECT().ReadFile("/tmp/private-key.pem").Return([]byte("invalid"), nil)
@@ -108,9 +110,9 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsForInvalidPrivateKey(t *testing
 
 func TestSigningKeyManagerSetPrivateKeyPath_FailsForKeyMismatch(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString([]byte("different"))},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString([]byte("different"))},
 	}, nil)
 	osWrapperMock.EXPECT().GetFileMode("/tmp/private-key.pem").Return(os.FileMode(0o600), nil)
 	osWrapperMock.EXPECT().ReadFile("/tmp/private-key.pem").Return([]byte(u.LocalTestingPrivateKeyOpenSSH), nil)
@@ -121,16 +123,16 @@ func TestSigningKeyManagerSetPrivateKeyPath_FailsForKeyMismatch(t *testing.T) {
 
 func TestSigningKeyManagerSetPrivateKeyPath_SavesPath(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	config := &LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
+	config := &configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
 	}
 	sessionManagerMock.EXPECT().GetConfig().Return(config, nil)
 	osWrapperMock.EXPECT().GetFileMode("/tmp/private-key.pem").Return(os.FileMode(0o600), nil)
 	osWrapperMock.EXPECT().ReadFile("/tmp/private-key.pem").Return([]byte(u.LocalTestingPrivateKeyOpenSSH), nil)
-	sessionManagerMock.EXPECT().SetConfig(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().SetConfig(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw()),
 			PrivateKeyPath:     "/tmp/private-key.pem",
 		},
@@ -142,8 +144,8 @@ func TestSigningKeyManagerSetPrivateKeyPath_SavesPath(t *testing.T) {
 
 func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsWithoutStoredPublicKey(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
 	}, nil)
 
 	err := keyManager.ValidateConfiguredPrivateKey(u.LocalTestingPrivateKeyPassphrase)
@@ -152,9 +154,9 @@ func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsWithoutStoredPublicK
 
 func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsWithoutPrivateKeyPath(t *testing.T) {
 	keyManager, sessionManagerMock, _ := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw())},
 	}, nil)
 
 	err := keyManager.ValidateConfiguredPrivateKey(u.LocalTestingPrivateKeyPassphrase)
@@ -163,9 +165,9 @@ func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsWithoutPrivateKeyPat
 
 func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsForKeyMismatch(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString([]byte("different")),
 			PrivateKeyPath:     "/tmp/private-key.pem",
 		},
@@ -179,9 +181,9 @@ func TestSigningKeyManagerValidateConfiguredPrivateKey_FailsForKeyMismatch(t *te
 
 func TestSigningKeyManagerValidateConfiguredPrivateKey_Succeeds(t *testing.T) {
 	keyManager, sessionManagerMock, osWrapperMock := setupSigningKeyManagerTest(t)
-	sessionManagerMock.EXPECT().GetConfig().Return(&LocalConfig{
-		Session: &SessionData{Maintainer: "alice"},
-		Signing: &SigningConfig{
+	sessionManagerMock.EXPECT().GetConfig().Return(&configuration.Config{
+		Session: &configuration.SessionData{Maintainer: "alice"},
+		Signing: &configuration.SigningConfig{
 			PublicKeyRawBase64: base64.StdEncoding.EncodeToString(u.GetLocalTestingPublicKeyRaw()),
 			PrivateKeyPath:     "/tmp/private-key.pem",
 		},

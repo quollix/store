@@ -13,7 +13,7 @@ import (
 var (
 	expectedIncorrectUsernameOrPasswordErrors = u.MapOf(IncorrectUsernameOrPasswordError)
 	expectedSetupInitialPasswordErrors        = u.MapOf(RegistrationCodeNotFoundError, RegistrationCodeExpiredError)
-	expectedAdminMaintainerErrors             = u.MapOf(MaintainerAlreadyExistsError, EmailAlreadyExistsError, PublicKeyAlreadyExistsError, InvalidPublicKeyError, InvalidPublicKeySignatureError, MaintainerNotFoundError, AdminMaintainerDeleteError)
+	expectedAdminMaintainerErrors             = u.MapOf(MaintainerAlreadyExistsError, EmailAlreadyExistsError, PublicKeyAlreadyExistsError, InvalidPublicKeyError, InvalidPublicKeySignatureError, MaintainerNotFoundError, AdminMaintainerDeleteError, StorageLimitMustBeNonNegativeError)
 	expectedEmailAlreadyExistsErrors          = u.MapOf(EmailAlreadyExistsError)
 )
 
@@ -111,6 +111,15 @@ func (h *UserHandler) AdminCreateMaintainerHandler(w http.ResponseWriter, r *htt
 	}
 }
 
+func (h *UserHandler) AdminListMaintainersHandler(w http.ResponseWriter, _ *http.Request) {
+	maintainerList, err := h.UserRepo.ListMaintainers()
+	if err != nil {
+		u.WriteResponseError(w, nil, err)
+		return
+	}
+	u.SendJsonResponse(w, maintainerList)
+}
+
 func (h *UserHandler) MaintainerPublicKeyHandler(w http.ResponseWriter, r *http.Request) {
 	form, ok := validation.ReadBody[store.MaintainerNameString](w, r)
 	if !ok {
@@ -133,6 +142,16 @@ func (h *UserHandler) AdminDeleteMaintainerHandler(w http.ResponseWriter, r *htt
 	if err != nil {
 		u.WriteResponseError(w, expectedAdminMaintainerErrors, err)
 		return
+	}
+}
+
+func (h *UserHandler) AdminSetMaintainerStorageLimitHandler(w http.ResponseWriter, r *http.Request) {
+	form, ok := validation.ReadBody[store.AdminMaintainerStorageLimitForm](w, r)
+	if !ok {
+		return
+	}
+	if err := h.UserService.SetMaintainerStorageLimitByAdmin(form.Name, form.StorageLimitInBytes); err != nil {
+		u.WriteResponseError(w, expectedAdminMaintainerErrors, err)
 	}
 }
 

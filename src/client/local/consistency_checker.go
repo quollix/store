@@ -1,6 +1,7 @@
 package local
 
 import (
+	"qsc/configuration"
 	"qsc/tools"
 
 	"github.com/quollix/common/validation"
@@ -12,6 +13,7 @@ type ConsistencyChecker interface {
 
 type ConsistencyCheckerImpl struct {
 	AppSelector        AppSelector
+	ConfigProvider     configuration.Provider
 	FileSystemOperator FileSystemOperator
 	ComposeValidator   validation.VersionValidator
 }
@@ -24,9 +26,17 @@ func (c *ConsistencyCheckerImpl) PerformConsistencyChecks(selectedApps []string)
 	if len(apps) == 0 {
 		return false, nil
 	}
+	config, err := c.ConfigProvider.GetConfig()
+	if err != nil {
+		return false, err
+	}
+	appsDirectory, err := config.RequireAppsDirectory()
+	if err != nil {
+		return false, err
+	}
 
 	for _, app := range apps {
-		appPath := tools.GetAppComposePath(tools.AppsDir, app)
+		appPath := tools.GetAppComposePath(appsDirectory, app)
 		content, err := c.FileSystemOperator.GetDockerComposeFileContent(appPath)
 		if err != nil {
 			return true, err

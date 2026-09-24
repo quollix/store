@@ -75,7 +75,9 @@ func (h *HandlerInitializer) InitializeHandlers() {
 		{store.AdminEmailTestPath, h.EmailHandler.SendTestEmailHandler, AdminRole},
 		{store.AdminEmailMaintainersPath, h.EmailHandler.SendMaintainerEmailHandler, AdminRole},
 		{store.AdminMaintainerCreatePath, h.UserHandler.AdminCreateMaintainerHandler, AdminRole},
+		{store.AdminMaintainerListPath, h.UserHandler.AdminListMaintainersHandler, AdminRole},
 		{store.AdminMaintainerDeletePath, h.UserHandler.AdminDeleteMaintainerHandler, AdminRole},
+		{store.AdminMaintainerSetSpacePath, h.UserHandler.AdminSetMaintainerStorageLimitHandler, AdminRole},
 	}
 
 	if h.Config.OpenWipeEndpoint {

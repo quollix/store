@@ -74,12 +74,12 @@ func TestClientTerminal() {
 		}
 		if !running {
 			BuildLocalDockerImage()
-			deploy.DeployLocal(tr, "store", storeLocalServiceYAMLForProfile(testProfile, false, true))
+			deploy.DeployLocal(tr, "store", storeLocalServiceYAMLForProfile(testProfile, true, true))
 		}
 	} else {
 		BuildLocalDockerImage()
 		deploy.CleanupLocal(tr, "store")
-		deploy.DeployLocal(tr, "store", storeLocalServiceYAMLForProfile(testProfile, false, true))
+		deploy.DeployLocal(tr, "store", storeLocalServiceYAMLForProfile(testProfile, true, true))
 		tr.Cmd().AsDaemon("store logs").Run("docker logs -f quollix_store_store")
 	}
 	defer tr.Cleanup()

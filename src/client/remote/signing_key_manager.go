@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base64"
 	"fmt"
+	"qsc/configuration"
 
 	u "github.com/quollix/common/utils"
 )
@@ -27,20 +28,20 @@ const (
 )
 
 type SigningKeyManagerImpl struct {
-	SessionManager SessionManager
+	ConfigProvider configuration.Provider
 	OsWrapper      u.OsWrapper
 }
 
 func (s *SigningKeyManagerImpl) StorePublicKeyRaw(publicKeyRaw []byte) error {
-	config, err := s.SessionManager.GetConfig()
+	config, err := s.ConfigProvider.GetConfig()
 	if err != nil {
 		return err
 	}
 	if config.Signing == nil {
-		config.Signing = &SigningConfig{}
+		config.Signing = &configuration.SigningConfig{}
 	}
 	config.Signing.PublicKeyRawBase64 = base64.StdEncoding.EncodeToString(publicKeyRaw)
-	return s.SessionManager.SetConfig(config)
+	return s.ConfigProvider.SetConfig(config)
 }
 
 func (s *SigningKeyManagerImpl) SetPrivateKeyPath(path string, passphrase string) error {
@@ -52,7 +53,7 @@ func (s *SigningKeyManagerImpl) SetPrivateKeyPath(path string, passphrase string
 		return err
 	}
 	config.Signing.PrivateKeyPath = path
-	return s.SessionManager.SetConfig(config)
+	return s.ConfigProvider.SetConfig(config)
 }
 
 func (s *SigningKeyManagerImpl) ValidateConfiguredPrivateKey(passphrase string) error {
@@ -66,8 +67,8 @@ func (s *SigningKeyManagerImpl) ValidateConfiguredPrivateKey(passphrase string) 
 	return s.validatePrivateKeyPath(config.Signing.PrivateKeyPath, passphrase, config.Signing.PublicKeyRawBase64)
 }
 
-func (s *SigningKeyManagerImpl) getConfigWithStoredPublicKeyRawForValidation() (*LocalConfig, error) {
-	config, err := s.SessionManager.GetConfig()
+func (s *SigningKeyManagerImpl) getConfigWithStoredPublicKeyRawForValidation() (*configuration.Config, error) {
+	config, err := s.ConfigProvider.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -80,8 +81,8 @@ func (s *SigningKeyManagerImpl) getConfigWithStoredPublicKeyRawForValidation() (
 	return config, nil
 }
 
-func (s *SigningKeyManagerImpl) getConfigWithStoredPublicKeyRaw() (*LocalConfig, error) {
-	config, err := s.SessionManager.GetConfig()
+func (s *SigningKeyManagerImpl) getConfigWithStoredPublicKeyRaw() (*configuration.Config, error) {
+	config, err := s.ConfigProvider.GetConfig()
 	if err != nil {
 		return nil, err
 	}
@@ -128,7 +129,7 @@ func (s *SigningKeyManagerImpl) validatePrivateKeyPath(path string, passphrase s
 }
 
 func (s *SigningKeyManagerImpl) GetPrivateKeyPath() (string, error) {
-	config, err := s.SessionManager.GetConfig()
+	config, err := s.ConfigProvider.GetConfig()
 	if err != nil {
 		return "", err
 	}

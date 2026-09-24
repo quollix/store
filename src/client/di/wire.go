@@ -5,6 +5,7 @@ package di
 
 import (
 	"qsc/commands"
+	"qsc/configuration"
 	"qsc/local"
 	"qsc/remote"
 	"qsc/tools"
@@ -23,6 +24,7 @@ func BuildDependencyGraph(config *tools.GlobalConfig) *commands.ClientDependenci
 		NewDockerHubRegistry,
 		NewVersionValidator,
 		wire.Struct(new(commands.ClientDependencies), "*"),
+		wire.Struct(new(configuration.ProviderImpl), "*"),
 		wire.Struct(new(remote.SessionManagerImpl), "*"),
 		wire.Struct(new(remote.SigningKeyManagerImpl), "*"),
 		wire.Struct(new(store.VersionSigningServiceImpl), "*"),
@@ -42,6 +44,7 @@ func BuildDependencyGraph(config *tools.GlobalConfig) *commands.ClientDependenci
 		wire.Struct(new(utils.BytesSignerImpl)),
 		wire.Bind(new(utils.OsWrapper), new(*utils.OsWrapperImpl)),
 		wire.Bind(new(utils.BytesSigner), new(*utils.BytesSignerImpl)),
+		wire.Bind(new(configuration.Provider), new(*configuration.ProviderImpl)),
 		wire.Bind(new(remote.SessionManager), new(*remote.SessionManagerImpl)),
 		wire.Bind(new(remote.SigningKeyManager), new(*remote.SigningKeyManagerImpl)),
 		wire.Bind(new(store.VersionSigningCodec), new(*store.VersionSigningCodecImpl)),

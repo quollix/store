@@ -8,7 +8,6 @@ import (
 	"qsc/tools"
 
 	"github.com/quollix/common/utils"
-	"github.com/quollix/deepstack"
 	"github.com/quollix/taskrunner"
 )
 
@@ -37,15 +36,8 @@ func main() {
 }
 
 func renderCliError(err error) string {
-	deepStackError, ok := err.(*deepstack.DeepStackError)
-	if !ok {
-		return utils.ExtractError(err)
+	if responseErrorMessage, ok := utils.ExtractResponseErrorMessage(err); ok {
+		return responseErrorMessage
 	}
-
-	responseBody, ok := deepStackError.Context["response_body"].(string)
-	if ok && responseBody != "" {
-		return responseBody
-	}
-
-	return deepStackError.Message
+	return utils.ExtractError(err)
 }

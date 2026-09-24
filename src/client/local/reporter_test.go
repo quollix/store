@@ -22,10 +22,10 @@ func TestConvertUpdateReportToPrettyString_WithServiceUpdates(t *testing.T) {
 
 	actual := ConvertUpdateReportToPrettyString(report)
 
-	expected := "- " + ansiGreen + "sample-app: OK, update successful" + ansiReset + "\n" +
+	expected := "- " + tools.AnsiGreen + "sample-app: OK, update successful" + tools.AnsiReset + "\n" +
 		"  - nginx: 1.0 -> 1.1\n" +
 		"  - redis: 7.0 -> 7.1\n" +
-		"summary: " + ansiGreen + "overall update successful" + ansiReset + "\n"
+		"summary: " + tools.AnsiGreen + "overall update successful" + tools.AnsiReset + "\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -37,8 +37,8 @@ func TestConvertUpdateReportToPrettyString_WithNoUpdates(t *testing.T) {
 
 	actual := ConvertUpdateReportToPrettyString(report)
 
-	expected := "- " + ansiGreen + "sample-app: OK, no updates found" + ansiReset + "\n" +
-		"summary: " + ansiGreen + "overall update successful" + ansiReset + "\n"
+	expected := "- " + tools.AnsiGreen + "sample-app: OK, no updates found" + tools.AnsiReset + "\n" +
+		"summary: " + tools.AnsiGreen + "overall update successful" + tools.AnsiReset + "\n"
 	assert.Equal(t, expected, actual)
 }
 
@@ -54,10 +54,10 @@ func TestConvertUpdateReportToPrettyString_ListsFailingApps(t *testing.T) {
 
 	actual := ConvertUpdateReportToPrettyString(report)
 
-	expected := "- " + ansiRed + "nextcloud: FAIL, update did not succeed, error: registry request failed" + ansiReset + "\n" +
-		"- " + ansiGreen + "vaultwarden: OK, no updates found" + ansiReset + "\n" +
-		"- " + ansiRed + "wordpress: FAIL, update did not succeed, error: registry request failed" + ansiReset + "\n" +
-		"summary: " + ansiRed + "overall update failed" + ansiReset + "\n" +
+	expected := "- " + tools.AnsiRed + "nextcloud: FAIL, update did not succeed, error: registry request failed" + tools.AnsiReset + "\n" +
+		"- " + tools.AnsiGreen + "vaultwarden: OK, no updates found" + tools.AnsiReset + "\n" +
+		"- " + tools.AnsiRed + "wordpress: FAIL, update did not succeed, error: registry request failed" + tools.AnsiReset + "\n" +
+		"summary: " + tools.AnsiRed + "overall update failed" + tools.AnsiReset + "\n" +
 		"failing apps: nextcloud wordpress\n"
 	assert.Equal(t, expected, actual)
 }

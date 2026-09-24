@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"qsc/configuration"
 	"qsc/local"
 	"qsc/remote"
 	"qsc/tools"
@@ -12,6 +13,7 @@ import (
 
 type ClientDependencies struct {
 	Config                *tools.GlobalConfig
+	ConfigProvider        configuration.Provider
 	SigningKeyManager     remote.SigningKeyManager
 	SessionManager        remote.SessionManager
 	AppStoreClient        *store.AppStoreClientImpl

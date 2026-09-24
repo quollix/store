@@ -20,7 +20,7 @@ var expectedVersionUploadErrors = u.MapOf(
 	maintainers.MaximumStorageExceededError,
 	maintainers.InvalidPublicKeyError,
 	VersionAlreadyExist,
-	VersionContentAlreadyExists,
+	store.VersionContentAlreadyExists,
 	VersionUploadTimestampTooOld,
 	VersionUploadTimestampInFuture,
 	VersionUploadTimestampNotNewer,
@@ -43,13 +43,13 @@ func (v *VersionsHandler) VersionsUploadHandler(w http.ResponseWriter, r *http.R
 	if !ok {
 		return
 	}
-	r.Body = http.MaxBytesReader(w, r.Body, tools.UserStorageLimitInBytes)
+	r.Body = http.MaxBytesReader(w, r.Body, tools.VersionUploadLimitInBytes)
 	defer u.Close(r.Body)
 	var versionUpload store.VersionUploadDto
 	err := json.NewDecoder(r.Body).Decode(&versionUpload)
 	var maxBytesError *http.MaxBytesError
 	if errors.As(err, &maxBytesError) {
-		msg := fmt.Sprintf("version content too large, the limit is %d MB", tools.UserStorageLimitInBytes)
+		msg := fmt.Sprintf("version content too large, the limit is %d MB", tools.VersionUploadLimitInBytes/tools.OneMegaByteInBytes)
 		u.Logger.Info(msg, tools.UserField, user)
 		http.Error(w, msg, http.StatusBadRequest)
 		return

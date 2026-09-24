@@ -1,4 +1,10 @@
 packages:
+  qsc/configuration:
+    interfaces:
+      Provider:
+        config:
+          filename: provider_mock.go
+          structname: ProviderMock
   qsc/local:
     interfaces:
       AppSelector:

@@ -3,6 +3,8 @@ package local
 import (
 	"testing"
 
+	"qsc/configuration"
+
 	u "github.com/quollix/common/utils"
 	"qsc/tools"
 
@@ -21,11 +23,14 @@ func setupSingleAppUpdaterTest(t *testing.T) *singleAppUpdaterTestDependencies {
 	fileSystemOperatorMock := NewFileSystemOperatorMock(t)
 	updateFetcherMock := NewUpdateFetcherMock(t)
 	composeContentUpdaterMock := NewComposeContentUpdaterMock(t)
+	configProviderMock := configuration.NewProviderMock(t)
+	configProviderMock.EXPECT().GetConfig().Return(&configuration.Config{AppsDirectory: testAppsDirectory}, nil)
 	return &singleAppUpdaterTestDependencies{
 		singleAppUpdater: &SingleAppUpdaterImpl{
 			FileSystemOperator:    fileSystemOperatorMock,
 			AppUpdater:            updateFetcherMock,
 			ComposeContentUpdater: composeContentUpdaterMock,
+			ConfigProvider:        configProviderMock,
 		},
 		fileSystemOperator:    fileSystemOperatorMock,
 		updateFetcher:         updateFetcherMock,
@@ -35,7 +40,7 @@ func setupSingleAppUpdaterTest(t *testing.T) *singleAppUpdaterTestDependencies {
 
 func TestSingleAppUpdaterImpl_ConductUpdateForSingleApp_WritesUpdatedComposeFile(t *testing.T) {
 	deps := setupSingleAppUpdaterTest(t)
-	sourceComposePath := tools.GetAppComposePath(tools.AppsDir, tools.SampleAppName)
+	sourceComposePath := tools.GetAppComposePath(testAppsDirectory, tools.SampleAppName)
 	composeContent := []byte("old compose")
 	updatedComposeContent := []byte("new compose")
 	serviceUpdates := []tools.ServiceUpdate{{ServiceName: "web", ImageName: "nginx", OldTag: "1.0", NewTag: "1.1"}}
@@ -55,7 +60,7 @@ func TestSingleAppUpdaterImpl_ConductUpdateForSingleApp_WritesUpdatedComposeFile
 
 func TestSingleAppUpdaterImpl_ConductUpdateForSingleApp_DoesNotWriteWhenThereAreNoUpdates(t *testing.T) {
 	deps := setupSingleAppUpdaterTest(t)
-	sourceComposePath := tools.GetAppComposePath(tools.AppsDir, tools.SampleAppName)
+	sourceComposePath := tools.GetAppComposePath(testAppsDirectory, tools.SampleAppName)
 	composeContent := []byte("compose")
 	deps.fileSystemOperator.EXPECT().GetDockerComposeFileContent(sourceComposePath).Return(composeContent, nil)
 	deps.updateFetcher.EXPECT().FetchUpdateAndWriteToReport(mock.Anything, composeContent).Return(nil)
@@ -69,7 +74,7 @@ func TestSingleAppUpdaterImpl_ConductUpdateForSingleApp_DoesNotWriteWhenThereAre
 
 func TestSingleAppUpdaterImpl_ConductUpdateForSingleApp_StoresErrorMessage(t *testing.T) {
 	deps := setupSingleAppUpdaterTest(t)
-	sourceComposePath := tools.GetAppComposePath(tools.AppsDir, tools.SampleAppName)
+	sourceComposePath := tools.GetAppComposePath(testAppsDirectory, tools.SampleAppName)
 	deps.fileSystemOperator.EXPECT().GetDockerComposeFileContent(sourceComposePath).Return(nil, u.Logger.NewError("read failed"))
 
 	report := deps.singleAppUpdater.ConductUpdateForSingleApp(tools.SampleAppName)

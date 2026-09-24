@@ -28,6 +28,7 @@ var (
 	MaintainerPublicKeySignatureNotFoundError = "maintainer public key signature not found"
 	MaintainerNotFoundError                   = "maintainer not found"
 	AdminMaintainerDeleteError                = "admin maintainer cannot be deleted"
+	StorageLimitMustBeNonNegativeError        = "storage limit must not be negative"
 	RegistrationCodeNotFoundError             = "registration code not found"
 	RegistrationCodeExpiredError              = "registration code expired"
 )
@@ -235,6 +236,18 @@ func (s *UserServiceImpl) DeleteMaintainerByAdmin(name string) error {
 		return u.Logger.NewError(AdminMaintainerDeleteError)
 	}
 	return s.UserRepo.DeleteUser(user.Id)
+}
+
+func (s *UserServiceImpl) SetMaintainerStorageLimitByAdmin(name string, storageLimitInBytes int64) error {
+	if storageLimitInBytes < 0 {
+		return u.Logger.NewError(StorageLimitMustBeNonNegativeError)
+	}
+	user, err := s.getMaintainerByNameForAdmin(name)
+	if err != nil {
+		return err
+	}
+	user.StorageLimitInBytes = storageLimitInBytes
+	return s.UserRepo.UpdateUser(user)
 }
 
 func (s *UserServiceImpl) getMaintainerByNameForAdmin(name string) (*tools.User, error) {

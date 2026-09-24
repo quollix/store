@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	AppsDir            = "apps"
 	OfficialMaintainer = "quollix"
 	SampleMaintainer   = "sample"
 	SampleAppName      = "sampleapp"

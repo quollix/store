@@ -1,8 +1,6 @@
 package local
 
-import (
-	"qsc/tools"
-)
+import "qsc/configuration"
 
 type AppSelector interface {
 	SelectApps(selectedApps []string) ([]string, error)
@@ -10,10 +8,19 @@ type AppSelector interface {
 
 type AppSelectorImpl struct {
 	FileSystemOperator FileSystemOperator
+	ConfigProvider     configuration.Provider
 }
 
 func (a *AppSelectorImpl) SelectApps(selectedApps []string) ([]string, error) {
-	appNames, err := a.FileSystemOperator.GetAppNames(tools.AppsDir)
+	config, err := a.ConfigProvider.GetConfig()
+	if err != nil {
+		return nil, err
+	}
+	appsDirectory, err := config.RequireAppsDirectory()
+	if err != nil {
+		return nil, err
+	}
+	appNames, err := a.FileSystemOperator.GetAppNames(appsDirectory)
 	if err != nil {
 		return nil, err
 	}

@@ -45,13 +45,10 @@ var uploadVersionCmd = &cobra.Command{
 			PrivateKeyPassphrase: privateKeyPassphrase,
 			SelectedApps:         args,
 		})
-		if err != nil {
-			return err
+		for _, result := range uploadResults {
+			fmt.Printf("%s: %s\n", result.AppName, result.Message)
 		}
-		for range uploadResults {
-			fmt.Println("version uploaded successfully")
-		}
-		return nil
+		return err
 	},
 }
 
@@ -216,11 +213,11 @@ var diffVersionsCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		diff, err := diffVersionContents(leftContent, rightContent)
+		diffLines, err := DiffLines(SplitDiffLines(string(leftContent)), SplitDiffLines(string(rightContent)))
 		if err != nil {
 			return err
 		}
-		fmt.Print(diff)
+		fmt.Print(RenderDiff(diffLines))
 		return nil
 	},
 }
