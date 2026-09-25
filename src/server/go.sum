@@ -118,8 +118,8 @@ github.com/pkg/errors v0.9.1/go.mod h1:bwawxfHBFNV+L2hUp1rHADufV3IMtnDRdf1r5NINE
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 h1:Jamvg5psRIccs7FGNTlIRMkT8wgtp5eCXdBlqhYGL6U=
 github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/quollix/common v1.3.20 h1:A0xOygR3x4I9eANppxfJWjxxDZPSAOHZfAfsH1aR9Jo=
-github.com/quollix/common v1.3.20/go.mod h1:03RwLkhoOHAWJDFKdB7MWetmjJveIrk7cQDMQ9fzP28=
+github.com/quollix/common v1.3.21 h1:tszVYO0LfnnSuacIR9vunSIinjst8aUhJz7UH5QqXXQ=
+github.com/quollix/common v1.3.21/go.mod h1:03RwLkhoOHAWJDFKdB7MWetmjJveIrk7cQDMQ9fzP28=
 github.com/quollix/deepstack v1.2.3 h1:OYEa7UVgoS5Mxy0wrhdZef9cems4NopSCICeBg7jNYQ=
 github.com/quollix/deepstack v1.2.3/go.mod h1:BgFaYHqhgIQMZq5B+nieROToH8tSB0sPmAkD9QbQIyY=
 github.com/quollix/taskrunner v1.2.7 h1:ZAWfK+iaQLRO+O+97JDfPI9/BXH0QV3sd16T/zqdJ3c=
