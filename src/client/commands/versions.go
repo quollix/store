@@ -306,3 +306,45 @@ func printIndexedVersionsTable(versions []store.LeanVersionDto) {
 func formatVersionTimestamp(timestamp time.Time) string {
 	return timestamp.Format("2006-01-02 15:04:05")
 }
+
+func newPruneIncompatibleVersionsCommand() *cobra.Command {
+	command := &cobra.Command{
+		Use:   "prune-incompatible",
+		Short: "prune incompatible versions from all your apps",
+		Args:  cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			dryRun, err := cmd.Flags().GetBool("dry-run")
+			if err != nil {
+				return err
+			}
+			if _, err := Dependencies.SessionManager.RequireSession(); err != nil {
+				return err
+			}
+			if !dryRun {
+				if err := promptMaintainerToDeletionConfirmOperation("pruning incompatible versions from all your apps"); err != nil {
+					return err
+				}
+			}
+			versions, err := Dependencies.AppStoreClient.PruneIncompatibleVersions(dryRun)
+			if err != nil {
+				return err
+			}
+			if len(versions) == 0 {
+				fmt.Println("No incompatible versions found.")
+				return nil
+			}
+			if dryRun {
+				fmt.Println("Versions to delete:")
+			} else {
+				fmt.Println("Deleted versions:")
+			}
+			fmt.Print(renderIncompatibleVersionsTable(versions))
+			if !dryRun {
+				fmt.Println("Pruning was successful.")
+			}
+			return nil
+		},
+	}
+	command.Flags().BoolP("dry-run", "d", false, "list incompatible versions without deleting them")
+	return command
+}

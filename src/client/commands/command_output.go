@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"text/tabwriter"
 	"time"
 
@@ -94,4 +95,18 @@ func formatOptionalTimestamp(timestamp time.Time) string {
 		return "-"
 	}
 	return formatVersionTimestamp(timestamp)
+}
+
+func renderIncompatibleVersionsTable(versions []store.IncompatibleVersionDto) string {
+	rows := make([][]string, 0, len(versions))
+	for _, version := range versions {
+		rows = append(rows, []string{
+			version.AppName,
+			strconv.Itoa(version.Version.VersionId),
+			version.Version.Name,
+			formatVersionTimestamp(version.Version.CreationTimestamp),
+			strings.Join(strings.Fields(version.Reason), " "),
+		})
+	}
+	return renderTable([]string{"app", "id", "version", "timestamp", "reason"}, rows)
 }

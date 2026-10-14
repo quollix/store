@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"sort"
 	"time"
 
 	"server/apps"
@@ -25,6 +26,7 @@ var (
 )
 
 type VersionService struct {
+	Validator   validation.VersionValidator
 	VersionRepo VersionRepository
 	UserService *maintainers.UserServiceImpl
 	AppRepo     apps.AppRepository
@@ -165,4 +167,36 @@ func (s *VersionService) AssertVersionIsPresent(userName, appName, versionName s
 		return u.Logger.NewError(tools.DoesNotExistError)
 	}
 	return nil
+}
+
+func (s *VersionService) PruneIncompatibleVersions(user *tools.User, dryRun bool) ([]store.IncompatibleVersionDto, error) {
+	appNames, err := s.AppRepo.GetAppList(user.Id)
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(appNames)
+	incompatible := make([]store.IncompatibleVersionDto, 0)
+	for _, appName := range appNames {
+		appVersions, err := s.VersionRepo.ListVersionsOfApp(user.Name, appName)
+		if err != nil {
+			return nil, err
+		}
+		for _, version := range appVersions {
+			content, err := s.VersionRepo.GetVersionContentByID(version.VersionId)
+			if err != nil {
+				return nil, err
+			}
+			if err := s.Validator.Validate(content, user.Name, appName); err != nil {
+				incompatible = append(incompatible, store.IncompatibleVersionDto{AppName: appName, Version: version, Reason: err.Error()})
+			}
+		}
+	}
+	if !dryRun {
+		for _, version := range incompatible {
+			if err := s.DeleteVersionByIDWithChecks(user, version.Version.VersionId); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return incompatible, nil
 }

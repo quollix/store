@@ -65,6 +65,7 @@ func (h *HandlerInitializer) InitializeHandlers() {
 		{store.EmailChangePath, h.UserHandler.ChangeEmailHandler, UserRole},
 		{store.VersionUploadPath, h.VersionsHandler.VersionsUploadHandler, UserRole},
 		{store.VersionDeletePath, h.VersionsHandler.VersionDeleteHandler, UserRole},
+		{store.PruneIncompatibleVersionsPath, h.VersionsHandler.PruneIncompatibleVersionsHandler, UserRole},
 		{store.VersionMigrationCheckpointPath, h.VersionsHandler.VersionMigrationCheckpointHandler, UserRole},
 		{store.AppCreationPath, h.AppsHandler.AppCreationHandler, UserRole},
 		{store.AppGetListPath, h.AppsHandler.AppGetListHandler, UserRole},
@@ -82,7 +83,10 @@ func (h *HandlerInitializer) InitializeHandlers() {
 
 	if h.Config.OpenWipeEndpoint {
 		u.Logger.Warn("opening unprotected full data wipe endpoint meant for testing only")
-		routes = append(routes, Route{store.WipeDataPath, h.UserHandler.WipeData, AnonymousRole})
+		routes = append(routes,
+			Route{store.WipeDataPath, h.UserHandler.WipeData, AnonymousRole},
+			Route{store.AddIncompatibleVersionPath, h.VersionsHandler.AddIncompatibleVersionHandler, UserRole},
+		)
 	}
 
 	h.registerRoutes(routes)

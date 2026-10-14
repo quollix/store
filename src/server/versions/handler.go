@@ -155,3 +155,20 @@ func (v *VersionsHandler) DownloadNextVersionForUpdateHandler(w http.ResponseWri
 	}
 	u.SendJsonResponse(w, response)
 }
+
+func (v *VersionsHandler) PruneIncompatibleVersionsHandler(w http.ResponseWriter, r *http.Request) {
+	user, ok := tools.GetUserFromContextOrWriteError(w, r)
+	if !ok {
+		return
+	}
+	request, ok := validation.ReadBody[store.PruneIncompatibleVersionsRequest](w, r)
+	if !ok {
+		return
+	}
+	versions, err := v.VersionService.PruneIncompatibleVersions(user, request.DryRun)
+	if err != nil {
+		u.WriteResponseError(w, tools.DoesNotExistErrorMap, err, tools.UserField, user)
+		return
+	}
+	u.SendJsonResponse(w, versions)
+}

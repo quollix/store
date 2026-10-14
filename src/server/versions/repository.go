@@ -28,6 +28,7 @@ type VersionRepository interface {
 	// Deprecated: use GetVersionByID.
 	GetVersion(userName, appName, version string) (*store.Version, error)
 	GetVersionByID(versionId int) (*store.Version, error)
+	GetVersionContentByID(versionId int) ([]byte, error)
 	GetNextVersionForUpdate(userName, appName string, currentVersionCreationTimestamp time.Time) (*store.Version, error)
 }
 
@@ -351,4 +352,16 @@ func (r *VersionRepositoryImpl) ListVersionsOfApp(userName, appName string) ([]s
 	}
 
 	return versions, nil
+}
+
+func (r *VersionRepositoryImpl) GetVersionContentByID(versionId int) ([]byte, error) {
+	var content []byte
+	err := r.DatabaseProvider.GetDb().QueryRow("SELECT data FROM versions WHERE version_id = $1", versionId).Scan(&content)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, u.Logger.NewError(tools.DoesNotExistError)
+	}
+	if err != nil {
+		return nil, u.Logger.NewError(err.Error())
+	}
+	return content, nil
 }

@@ -22,7 +22,7 @@ func InitializeCobraCommands(deps *ClientDependencies) {
 	adminCmd.AddCommand(adminMaintainersCmd, adminEmailCmd)
 	AppsCmd.AddCommand(createAppCmd, listRemoteAppsCmd, deleteRemoteAppCmd, searchRemoteAppsCmd)
 	versionCheckpointCmd.AddCommand(markVersionCheckpointCmd, unmarkVersionCheckpointCmd)
-	versionsCmd.AddCommand(deleteVersionCmd, listVersionsCmd, cloneVersionsCmd, contentVersionCmd, diffVersionsCmd, versionCheckpointCmd)
+	versionsCmd.AddCommand(newPruneIncompatibleVersionsCommand(), deleteVersionCmd, listVersionsCmd, cloneVersionsCmd, contentVersionCmd, diffVersionsCmd, versionCheckpointCmd)
 	devCmd.AddCommand(devBootstrapCmd)
 	RootCmd.AddCommand(Account, adminCmd, AppsCmd, onboardingCmd, sessionCmd, versionsCmd, devCmd, LocalCmd)
 	RootCmd.CompletionOptions = cobra.CompletionOptions{DisableDefaultCmd: true}
