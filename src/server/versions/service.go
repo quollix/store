@@ -26,7 +26,6 @@ var (
 )
 
 type VersionService struct {
-	Validator   validation.VersionValidator
 	VersionRepo VersionRepository
 	UserService *maintainers.UserServiceImpl
 	AppRepo     apps.AppRepository
@@ -170,6 +169,8 @@ func (s *VersionService) AssertVersionIsPresent(userName, appName, versionName s
 }
 
 func (s *VersionService) PruneIncompatibleVersions(user *tools.User, dryRun bool) ([]store.IncompatibleVersionDto, error) {
+	// TODO: Remove relaxed validation once legacy versions have license notices.
+	validator := validation.NewVersionValidator(false)
 	appNames, err := s.AppRepo.GetAppList(user.Id)
 	if err != nil {
 		return nil, err
@@ -186,8 +187,8 @@ func (s *VersionService) PruneIncompatibleVersions(user *tools.User, dryRun bool
 			if err != nil {
 				return nil, err
 			}
-			if err := s.Validator.Validate(content, user.Name, appName); err != nil {
-				incompatible = append(incompatible, store.IncompatibleVersionDto{AppName: appName, Version: version, Reason: err.Error()})
+			if err := validator.Validate(content, user.Name, appName); err != nil {
+				incompatible = append(incompatible, store.IncompatibleVersionDto{AppName: appName, Version: version, Reason: u.ExtractError(err)})
 			}
 		}
 	}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/quollix/common/assert"
 	"github.com/quollix/common/store"
-	"github.com/quollix/common/validation"
 )
 
 func TestPruneIncompatibleVersions_PreviewAndDelete(t *testing.T) {
@@ -35,7 +34,7 @@ func TestPruneIncompatibleVersions_PreviewAndDelete(t *testing.T) {
 	assert.Equal(t, 1, len(preview))
 	assert.Equal(t, sampleApp, preview[0].AppName)
 	assert.Equal(t, before[1], preview[0].Version)
-	assert.True(t, strings.Contains(preview[0].Reason, validation.MissingAppDefinitionLicenseNotice))
+	assert.True(t, strings.HasPrefix(preview[0].Reason, "yaml:"))
 
 	afterPreview, err := client.ListVersions(sampleMaintainer, sampleApp)
 	assert.Nil(t, err)
@@ -49,7 +48,7 @@ func TestPruneIncompatibleVersions_PreviewAndDelete(t *testing.T) {
 	assert.Equal(t, 1, len(deleted))
 	assert.Equal(t, sampleApp, deleted[0].AppName)
 	assert.Equal(t, before[1], deleted[0].Version)
-	assert.True(t, strings.Contains(deleted[0].Reason, validation.MissingAppDefinitionLicenseNotice))
+	assert.Equal(t, preview[0].Reason, deleted[0].Reason)
 
 	remaining, err := client.ListVersions(sampleMaintainer, sampleApp)
 	assert.Nil(t, err)

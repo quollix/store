@@ -9,7 +9,6 @@ import (
 	"qsc/tools"
 
 	"github.com/quollix/common/assert"
-	"github.com/quollix/common/validation"
 )
 
 func TestPruneIncompatibleVersionsTerminalWorkflow(t *testing.T) {
@@ -26,7 +25,7 @@ func TestPruneIncompatibleVersionsTerminalWorkflow(t *testing.T) {
 	output := runClientCommand(t, "versions prune-incompatible -d")
 	assert.True(t, strings.Contains(output, "Versions to delete:"))
 	assert.True(t, strings.Contains(output, "0.1.0"))
-	assert.True(t, strings.Contains(output, validation.MissingAppDefinitionLicenseNotice))
+	assert.True(t, strings.Contains(output, "yaml:"))
 	assert.False(t, strings.Contains(output, "Type DELETE"))
 	afterPreview, err := setup.storeClient.ListVersions(tools.SampleMaintainer, terminalNginxApp)
 	assert.Nil(t, err)
