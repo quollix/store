@@ -19,6 +19,11 @@ var (
 )
 
 const (
+	latestTagPrefix = "latest-"
+	stableTagPrefix = "stable-"
+)
+
+const (
 	AppFileExtension         = ".yml"
 	ImageField               = "image"
 	TagField                 = "tag"
@@ -58,8 +63,11 @@ func SplitTag(tag string) (string, string, string) {
 	if strings.HasPrefix(tag, "v") {
 		prefix = "v"
 		tag = strings.TrimPrefix(tag, "v")
-	} else if strings.HasPrefix(tag, "stable-") {
-		prefix = "stable-"
+	} else if strings.HasPrefix(tag, latestTagPrefix) {
+		prefix = latestTagPrefix
+		tag = strings.TrimPrefix(tag, prefix)
+	} else if strings.HasPrefix(tag, stableTagPrefix) {
+		prefix = stableTagPrefix
 		tag = strings.TrimPrefix(tag, prefix)
 	}
 	suffix := ""
