@@ -57,7 +57,7 @@ func main() {
 	}
 
 	testCmd.AddCommand(testAllCmd, testBuildCmd, testReleaseCmd)
-	buildCmd.AddCommand(buildAllCmd)
+	buildCmd.AddCommand(buildAllCmd, buildLocalCmd)
 	serverCmd.AddCommand(serverBuildCmd, serverTestCmd)
 	serverTestCmd.AddCommand(serverTestUnitCmd, serverTestIntegrationCmd, serverTestComponentCmd, serverTestInitialAdminPasswordCmd, serverTestAllCmd)
 	clientCmd.AddCommand(clientBuildCmd, clientTestCmd)
@@ -137,6 +137,14 @@ var buildAllCmd = &cobra.Command{
 	Short: "build server and client",
 	Run: func(cmd *cobra.Command, args []string) {
 		BuildAll()
+	},
+}
+
+var buildLocalCmd = &cobra.Command{
+	Use:   "local-image",
+	Short: "build the local Docker image",
+	Run: func(cmd *cobra.Command, args []string) {
+		BuildLocalDockerImage()
 	},
 }
 
